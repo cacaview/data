@@ -3,12 +3,15 @@
 
 def test_calculate_tariff_with_default_rates(client, sample_trade_records, sample_countries):
     """Tariff calc should work even without tariff rules (fallback rates)."""
-    r = client.post("/api/tariff/calculate", json={
-        "hs_code": "854232",
-        "origin_country": "VNM",
-        "target_country": "CHN",
-        "value_usd": 100000,
-    })
+    r = client.post(
+        "/api/tariff/calculate",
+        json={
+            "hs_code": "854232",
+            "origin_country": "VNM",
+            "target_country": "CHN",
+            "value_usd": 100000,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert "mfn_rate" in data
@@ -27,6 +30,7 @@ def test_common_codes_returns_list(client, sample_trade_records):
 def test_calculate_tariff_with_tariff_rule(client, sample_trade_records, sample_countries, session):
     """When a tariff rule exists, use its rates."""
     from app.models.schemas_db import TariffRule
+
     rule = TariffRule(
         hs_code="854232",
         partner_country="VNM",
@@ -38,12 +42,15 @@ def test_calculate_tariff_with_tariff_rule(client, sample_trade_records, sample_
     session.add(rule)
     session.commit()
 
-    r = client.post("/api/tariff/calculate", json={
-        "hs_code": "854232",
-        "origin_country": "VNM",
-        "target_country": "CHN",
-        "value_usd": 100000,
-    })
+    r = client.post(
+        "/api/tariff/calculate",
+        json={
+            "hs_code": "854232",
+            "origin_country": "VNM",
+            "target_country": "CHN",
+            "value_usd": 100000,
+        },
+    )
     assert r.status_code == 200
     data = r.json()
     assert data["mfn_rate"] == 10.0

@@ -1,7 +1,7 @@
 """Repository-layer tests for trade data access."""
+
 from __future__ import annotations
 
-from app.core.constants import REPORTER_CODE
 from app.repositories import trade_repo
 
 
@@ -45,6 +45,6 @@ def test_get_country_name_map(session, sample_countries):
 def test_fetch_trend_rows_orders_by_year_month(session, sample_trade_records):
     rows = trade_repo.fetch_trend_rows(session)
     assert rows
-    for a, b in zip(rows, rows[1:]):
+    for a, b in zip(rows, rows[1:], strict=False):
         # year then month
         assert (a[0], a[1]) <= (b[0], b[1])

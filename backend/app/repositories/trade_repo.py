@@ -4,9 +4,10 @@ Encapsulates all database queries against the trade_records table.
 Route handlers should not import SQLAlchemy directly — they should
 call these functions instead.
 """
+
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -14,15 +15,15 @@ from sqlalchemy.orm import Session
 from app.core.constants import REPORTER_CODE
 from app.models.schemas_db import Country, TradeRecord
 
-
 # === Time range helpers ===
 
-def get_latest_year(db: Session) -> Optional[int]:
+
+def get_latest_year(db: Session) -> int | None:
     """Return the most recent year in the trade_records table."""
     return db.query(func.max(TradeRecord.year)).scalar()
 
 
-def get_latest_year_for_partner(db: Session, partner: str) -> Optional[int]:
+def get_latest_year_for_partner(db: Session, partner: str) -> int | None:
     """Latest year of trade with a specific partner."""
     return (
         db.query(func.max(TradeRecord.year))
@@ -33,12 +34,13 @@ def get_latest_year_for_partner(db: Session, partner: str) -> Optional[int]:
 
 # === Aggregate value queries ===
 
+
 def sum_trade_value(
     db: Session,
     *,
     year: int,
-    partner: Optional[str] = None,
-    section: Optional[str] = None,
+    partner: str | None = None,
+    section: str | None = None,
 ) -> float:
     """Sum trade_value_usd for the given filters (coalesced to 0)."""
     q = db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0)).filter(
@@ -57,7 +59,7 @@ def sum_trade_value_grouped(
     *,
     year: int,
     group_by: str,  # 'partner' or 'hs_section'
-) -> List[Tuple[str, float]]:
+) -> list[tuple[str, float]]:
     """Group-by sum of trade_value_usd.
 
     Args:
@@ -97,14 +99,15 @@ def count_distinct_sections(db: Session, *, year: int, partner: str) -> int:
 
 # === Trend queries ===
 
+
 def fetch_trend_rows(
     db: Session,
     *,
-    countries: Optional[Sequence[str]] = None,
-    sections: Optional[Sequence[str]] = None,
-    start_year: Optional[int] = None,
-    end_year: Optional[int] = None,
-) -> List[Tuple[int, int, str, float]]:
+    countries: Sequence[str] | None = None,
+    sections: Sequence[str] | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> list[tuple[int, int, str, float]]:
     """Fetch aggregated trend rows (year, month, partner, total)."""
     q = db.query(
         TradeRecord.year,
@@ -132,11 +135,12 @@ def fetch_trend_rows(
 
 # === Sankey queries ===
 
+
 def fetch_sankey_rows(
     db: Session,
     *,
     year: int,
-) -> List[Tuple[str, str, float]]:
+) -> list[tuple[str, str, float]]:
     """Fetch (partner, section, total) for sankey diagram."""
     rows = (
         db.query(
@@ -157,17 +161,18 @@ def fetch_sankey_rows(
 
 # === Country lookups ===
 
-def get_country(db: Session, code: str) -> Optional[Country]:
+
+def get_country(db: Session, code: str) -> Country | None:
     return db.query(Country).filter(Country.code == code).first()
 
 
-def get_countries_by_codes(db: Session, codes: Sequence[str]) -> List[Country]:
+def get_countries_by_codes(db: Session, codes: Sequence[str]) -> list[Country]:
     if not codes:
         return []
     return db.query(Country).filter(Country.code.in_(list(codes))).all()
 
 
-def get_country_name_map(db: Session, codes: Sequence[str]) -> Dict[str, str]:
+def get_country_name_map(db: Session, codes: Sequence[str]) -> dict[str, str]:
     """Return {code: name_cn} for the given country codes."""
     countries = get_countries_by_codes(db, codes)
     return {c.code: c.name_cn for c in countries}
@@ -175,7 +180,8 @@ def get_country_name_map(db: Session, codes: Sequence[str]) -> Dict[str, str]:
 
 # === Bulk operations (used by ETL / init) ===
 
-def bulk_insert_trade_records(db: Session, records: List[dict]) -> None:
+
+def bulk_insert_trade_records(db: Session, records: list[dict]) -> None:
     """Bulk insert a list of trade record dicts."""
     db.bulk_insert_mappings(TradeRecord, records)
     db.commit()
@@ -184,6 +190,7 @@ def bulk_insert_trade_records(db: Session, records: List[dict]) -> None:
 def update_source_record_count(db: Session, source: str, count: int) -> None:
     """Update the record_count column for a data source."""
     from app.models.schemas_db import DataSource
+
     src = db.query(DataSource).filter(DataSource.name == source).first()
     if src:
         src.record_count = count

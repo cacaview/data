@@ -4,17 +4,33 @@ All threshold values, magic numbers, and hardcoded lists that were
 previously scattered across route files live here. Importing from
 this module keeps business logic free of unexplained literals.
 """
+
 from __future__ import annotations
 
 # === Country codes ===
 ASEAN_COUNTRY_CODES: list[str] = [
-    "BRN", "KHM", "IDN", "LAO", "MYS",
-    "MMR", "PHL", "SGP", "THA", "VNM",
+    "BRN",
+    "KHM",
+    "IDN",
+    "LAO",
+    "MYS",
+    "MMR",
+    "PHL",
+    "SGP",
+    "THA",
+    "VNM",
 ]
 ASEAN_COUNTRY_NAMES: dict[str, str] = {
-    "BRN": "文莱", "KHM": "柬埔寨", "IDN": "印度尼西亚",
-    "LAO": "老挝", "MYS": "马来西亚", "MMR": "缅甸",
-    "PHL": "菲律宾", "SGP": "新加坡", "THA": "泰国", "VNM": "越南",
+    "BRN": "文莱",
+    "KHM": "柬埔寨",
+    "IDN": "印度尼西亚",
+    "LAO": "老挝",
+    "MYS": "马来西亚",
+    "MMR": "缅甸",
+    "PHL": "菲律宾",
+    "SGP": "新加坡",
+    "THA": "泰国",
+    "VNM": "越南",
 }
 
 REPORTER_CODE = "CHN"  # All trade data is reported from China
@@ -44,6 +60,7 @@ def get_country_coords(code: str) -> tuple[float, float] | None:
     Returns None only if `code` is not in the fallback table.
     """
     return _COUNTRY_COORDS_FALLBACK.get(code)
+
 
 # === Ranking / clustering thresholds ===
 RANKING_DEFAULT_LIMIT: int = 10

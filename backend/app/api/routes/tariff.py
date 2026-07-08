@@ -1,11 +1,12 @@
 """Tariff calculation routes -- duty computation and HS code lookup."""
+
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, distinct
+from sqlalchemy import distinct
 from sqlalchemy.orm import Session
 
 from app.models.database import get_db
-from app.models.schemas_db import TradeRecord, Country, Product, TariffRule
 from app.models.schemas import TariffRequest, TariffResult
+from app.models.schemas_db import Country, Product, TariffRule
 
 router = APIRouter()
 
@@ -28,9 +29,7 @@ def calculate_tariff(req: TariffRequest, db: Session = Depends(get_db)):
 
     # Product name lookup
     product = db.query(Product).filter(Product.hs_code == req.hs_code).first()
-    product_name = (
-        product.hs_name_cn if product and product.hs_name_cn else req.hs_code
-    )
+    product_name = product.hs_name_cn if product and product.hs_name_cn else req.hs_code
 
     # Country names
     origin = db.query(Country).filter(Country.code == req.origin_country).first()
@@ -107,12 +106,7 @@ def get_common_codes(db: Session = Depends(get_db)):
     Joins tariff_rules with products to provide code + name pairs.
     """
     # Get distinct HS codes from tariff rules
-    code_rows = (
-        db.query(distinct(TariffRule.hs_code))
-        .order_by(TariffRule.hs_code)
-        .limit(100)
-        .all()
-    )
+    code_rows = db.query(distinct(TariffRule.hs_code)).order_by(TariffRule.hs_code).limit(100).all()
     hs_codes = [r[0] for r in code_rows]
 
     if not hs_codes:
@@ -122,7 +116,4 @@ def get_common_codes(db: Session = Depends(get_db)):
     products = db.query(Product).filter(Product.hs_code.in_(hs_codes)).all()
     name_map = {p.hs_code: (p.hs_name_cn or p.hs_name_en or p.hs_code) for p in products}
 
-    return [
-        {"hs_code": code, "code": code, "name": name_map.get(code, code)}
-        for code in hs_codes
-    ]
+    return [{"hs_code": code, "code": code, "name": name_map.get(code, code)} for code in hs_codes]

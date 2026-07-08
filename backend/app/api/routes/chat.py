@@ -1,11 +1,12 @@
 """AI chat assistant routes -- keyword-matching Q&A with trade data context."""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.database import get_db
-from app.models.schemas_db import TradeRecord, Country
 from app.models.schemas import ChatRequest, ChatResponse
+from app.models.schemas_db import Country, TradeRecord
 
 router = APIRouter()
 
@@ -39,7 +40,7 @@ def _answer_top_partner(db: Session) -> ChatResponse:
     name = country.name_cn if country else row[0]
     return ChatResponse(
         reply=f"根据{latest}年数据，中国最大的贸易伙伴是**{name}**，"
-              f"双边贸易额约为 **{row[1] / 1e8:.2f} 亿美元**。",
+        f"双边贸易额约为 **{row[1] / 1e8:.2f} 亿美元**。",
         chart_type="bar",
     )
 
@@ -59,7 +60,7 @@ def _answer_total_trade(db: Session) -> ChatResponse:
     growth = ((total - prev) / prev * 100) if prev else 0.0
     return ChatResponse(
         reply=f"中国与东盟{latest}年贸易总额约为 **{total / 1e8:.2f} 亿美元**，"
-              f"同比增长 **{growth:.1f}%**。"
+        f"同比增长 **{growth:.1f}%**。"
     )
 
 
@@ -80,7 +81,7 @@ def _answer_top_product(db: Session) -> ChatResponse:
         return ChatResponse(reply="暂无商品类别数据。")
     return ChatResponse(
         reply=f"{latest}年中国与东盟贸易中，增长贡献最大的商品类别是 **{row[0]}**，"
-              f"贸易额约 **{row[1] / 1e8:.2f} 亿美元**。",
+        f"贸易额约 **{row[1] / 1e8:.2f} 亿美元**。",
         chart_type="pie",
     )
 
@@ -155,8 +156,9 @@ def _answer_trend(db: Session) -> ChatResponse:
     direction = "增长" if latest_change > 0 else "下降"
 
     return ChatResponse(
-        reply=f"近年来中国与东盟贸易趋势：\n\n" + "\n".join(lines)
-              + f"\n\n最近一年同比{direction} **{abs(latest_change):.1f}%**。",
+        reply="近年来中国与东盟贸易趋势：\n\n"
+        + "\n".join(lines)
+        + f"\n\n最近一年同比{direction} **{abs(latest_change):.1f}%**。",
         chart_type="line",
     )
 
@@ -165,7 +167,10 @@ def _answer_trend(db: Session) -> ChatResponse:
 _KEYWORD_TABLE: list[tuple[list[str], callable]] = [
     (["最大贸易伙伴", "最大伙伴", "第一大", "第一伙伴", "top partner"], _answer_top_partner),
     (["贸易总额", "总贸易", "总额", "total trade"], _answer_total_trade),
-    (["增长最快", "增长贡献", "最大商品", "top product", "主要产品", "出口产品"], _answer_top_product),
+    (
+        ["增长最快", "增长贡献", "最大商品", "top product", "主要产品", "出口产品"],
+        _answer_top_product,
+    ),
     (["rcep", "RCEP", "关税影响", "rcep影响"], _answer_rcep),
     (["关税计算", "计算关税", "关税是多少", "tariff", "hs编码"], _answer_tariff_calc),
     (["出口", "export", "出口到东盟"], _answer_export_products),

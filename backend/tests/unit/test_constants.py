@@ -1,4 +1,5 @@
 """Constants module tests — ensure no value is silently changed."""
+
 from app.core import constants as c
 
 

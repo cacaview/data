@@ -6,6 +6,7 @@ Uses structlog for JSON-formatted logs with built-in context binding
 In development, the LOG_FORMAT=text setting yields a colored key=value
 output. In production, JSON is emitted by default.
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,9 +41,7 @@ def configure_logging() -> None:
         renderer = structlog.dev.ConsoleRenderer(colors=True)
     else:
         # Dev non-TTY: key=value
-        renderer = structlog.processors.KeyValueRenderer(
-            key_order=["timestamp", "level", "event"]
-        )
+        renderer = structlog.processors.KeyValueRenderer(key_order=["timestamp", "level", "event"])
 
     structlog.configure(
         processors=[

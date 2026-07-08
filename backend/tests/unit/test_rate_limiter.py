@@ -1,4 +1,5 @@
 """Rate limiter unit tests."""
+
 from app.middleware.rate_limit import IPRateLimiter
 
 
@@ -29,6 +30,7 @@ def test_window_expires():
     lim = IPRateLimiter(max_requests=1, window_seconds=0)
     # With 0-second window, every call should be allowed (entry expires immediately)
     import time
+
     lim.is_allowed("x")
     time.sleep(0.01)
     # Window=0 means cutoff = now - 0 = now; entry is at < now so dropped

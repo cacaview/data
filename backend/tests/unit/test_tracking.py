@@ -1,4 +1,5 @@
 """Request tracking middleware unit tests."""
+
 from app.middleware.tracking import _extract_trace_id
 
 

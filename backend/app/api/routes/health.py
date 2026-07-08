@@ -5,10 +5,11 @@ Provides:
 - /api/health/ready — readiness probe with dependency checks
 - /api/metrics — Prometheus-style metrics
 """
+
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -21,7 +22,7 @@ from app.models.database import engine
 router = APIRouter(prefix="/api", tags=["健康检查"])
 
 
-def _check_database() -> Dict[str, Any]:
+def _check_database() -> dict[str, Any]:
     """Check database connectivity with a lightweight SELECT 1."""
     try:
         with engine.connect() as conn:
@@ -31,10 +32,11 @@ def _check_database() -> Dict[str, Any]:
         return {"status": "error", "error": str(exc)[:200]}
 
 
-def _check_cache() -> Dict[str, Any]:
+def _check_cache() -> dict[str, Any]:
     """Check cache database is reachable."""
     try:
         from app.data.cache import CACHE_DB_PATH, get_cache_stats
+
         exists = os.path.exists(CACHE_DB_PATH)
         stats = get_cache_stats() if exists else None
         return {"status": "ok", "path": CACHE_DB_PATH, "stats": stats}

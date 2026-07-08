@@ -1,20 +1,21 @@
 """AI prediction routes -- LSTM mock, K-Means clustering, risk alerts."""
-import math
+
 import hashlib
+import math
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from typing import Optional
 
-from app.models.database import get_db
-from app.models.schemas_db import TradeRecord, Country, Product
-from app.models.schemas import PredictionResult, PredictionPoint, ClusterItem, RiskAlert
 from app.core.constants import (
     MOM_CHANGE_HIGH_THRESHOLD,
     MOM_CHANGE_MEDIUM_THRESHOLD,
     YOY_DROP_HIGH_THRESHOLD,
     YOY_DROP_MEDIUM_THRESHOLD,
 )
+from app.models.database import get_db
+from app.models.schemas import ClusterItem, PredictionPoint, PredictionResult, RiskAlert
+from app.models.schemas_db import Country, Product, TradeRecord
 
 router = APIRouter()
 
@@ -28,8 +29,8 @@ def _simple_seed(key: str) -> float:
 # ── GET /prediction ─────────────────────────────────────────────────────────
 @router.get("/prediction", response_model=PredictionResult)
 def get_prediction(
-    country: Optional[str] = Query(None, description="ISO country code"),
-    product: Optional[str] = Query(None, description="HS section name"),
+    country: str | None = Query(None, description="ISO country code"),
+    product: str | None = Query(None, description="HS section name"),
     db: Session = Depends(get_db),
 ):
     """Mock LSTM prediction using historical data + sine-wave projection.
@@ -73,13 +74,11 @@ def get_prediction(
     data: list[PredictionPoint] = []
 
     # Historical data with "predicted" overlay
-    for i, (date, val) in enumerate(zip(actual_dates, actual_values)):
+    for i, (date, val) in enumerate(zip(actual_dates, actual_values, strict=False)):
         phase = seed * 2 * math.pi + i * 0.3
         noise = std_val * 0.1 * math.sin(phase)
         predicted = val + noise
-        data.append(
-            PredictionPoint(date=date, actual=round(val, 2), predicted=round(predicted, 2))
-        )
+        data.append(PredictionPoint(date=date, actual=round(val, 2), predicted=round(predicted, 2)))
 
     # 6-month forward forecast
     last_year, last_month = rows[-1][0], rows[-1][1]
@@ -306,7 +305,7 @@ def get_risk_alerts(db: Session = Depends(get_db)):
 
     if len(monthly) >= 3:
         values = [r[2] for r in monthly]
-        mean_val = sum(values) / len(values)
+        sum(values) / len(values)
         for i in range(1, len(values)):
             if values[i - 1] == 0:
                 continue

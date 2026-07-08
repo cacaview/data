@@ -7,12 +7,13 @@ counter to prevent bursts above the limit.
 For multi-worker production deployments, swap the in-memory store
 for Redis. The interface is designed for that swap.
 """
+
 from __future__ import annotations
 
 import threading
 import time
 from collections import deque
-from typing import Callable, Deque, Dict, Tuple
+from collections.abc import Callable
 
 import structlog
 from fastapi import Request, status
@@ -35,9 +36,9 @@ class IPRateLimiter:
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self._lock = threading.Lock()
-        self._buckets: Dict[str, Deque[float]] = {}
+        self._buckets: dict[str, deque[float]] = {}
 
-    def is_allowed(self, client_ip: str) -> Tuple[bool, int]:
+    def is_allowed(self, client_ip: str) -> tuple[bool, int]:
         """Check if a request from client_ip is allowed.
 
         Returns:

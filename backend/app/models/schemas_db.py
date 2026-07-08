@@ -1,6 +1,9 @@
 """SQLAlchemy ORM models for trade data."""
+
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, Float, String, DateTime
+
+from sqlalchemy import Column, DateTime, Float, Integer, String
+
 from .database import Base
 
 
@@ -23,7 +26,9 @@ class TradeRecord(Base):
     quantity = Column(Float)
     unit = Column(String(20))
     trade_flow = Column(String(10), default="export")
-    source = Column(String(50), default="mock", index=True)  # Data source: mock, UN Comtrade, IMF, etc.
+    source = Column(
+        String(50), default="mock", index=True
+    )  # Data source: mock, UN Comtrade, IMF, etc.
     created_at = Column(DateTime, default=_utcnow)
 
 
@@ -70,6 +75,7 @@ class TariffRule(Base):
 
 class DataSource(Base):
     """Metadata table tracking available data sources and their status."""
+
     __tablename__ = "data_sources"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

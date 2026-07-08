@@ -1,19 +1,30 @@
 """Data assets routes -- lineage graph, quality metrics, data source catalog."""
-from fastapi import APIRouter, Depends
-from sqlalchemy import func, distinct
-from sqlalchemy.orm import Session
+
 from datetime import datetime
 
+from fastapi import APIRouter, Depends
+from sqlalchemy import distinct, func
+from sqlalchemy.orm import Session
+
 from app.models.database import get_db
-from app.models.schemas_db import TradeRecord, Country, Product, TariffRule, DataSource
-from app.models.schemas import LineageGraph, LineageNode, LineageEdge, QualityMetric, DataSourceMeta
+from app.models.schemas import DataSourceMeta, LineageEdge, LineageGraph, LineageNode, QualityMetric
+from app.models.schemas_db import Country, DataSource, Product, TariffRule, TradeRecord
 
 router = APIRouter()
 
 
 # ── Data source field definitions (static metadata) ──
 _SOURCE_FIELDS = {
-    "UN Comtrade": ["year", "month", "reporter", "partner", "hs_code", "trade_value_usd", "quantity", "source"],
+    "UN Comtrade": [
+        "year",
+        "month",
+        "reporter",
+        "partner",
+        "hs_code",
+        "trade_value_usd",
+        "quantity",
+        "source",
+    ],
     "World Bank Open Data": ["country_code", "indicator", "value", "year"],
     "IMF DOTS": ["reporter", "partner", "indicator", "period", "value"],
     "ExchangeRate-API": ["base", "currency", "rate", "last_update"],
@@ -57,18 +68,23 @@ def get_lineage(db: Session = Depends(get_db)):
         LineageNode(id="src_port", label="北部湾港", type="source", x=0, y=600),
         LineageNode(id="src_rcep", label="RCEP/ACFTA关税", type="source", x=0, y=700),
         LineageNode(id="src_bdi", label="BDI航运指数", type="source", x=0, y=800),
-
         # Processing stages
         LineageNode(id="proc_etl", label="ETL Pipeline", type="process", x=300, y=200),
         LineageNode(id="proc_clean", label="数据清洗", type="process", x=300, y=400),
         LineageNode(id="proc_norm", label="标准化 & 归一化", type="process", x=300, y=600),
-
         # Storage
-        LineageNode(id="store_trade", label=f"trade_records ({trade_count})", type="store", x=600, y=100),
-        LineageNode(id="store_country", label=f"countries ({country_count})", type="store", x=600, y=300),
-        LineageNode(id="store_product", label=f"products ({product_count})", type="store", x=600, y=500),
-        LineageNode(id="store_tariff", label=f"tariff_rules ({tariff_count})", type="store", x=600, y=700),
-
+        LineageNode(
+            id="store_trade", label=f"trade_records ({trade_count})", type="store", x=600, y=100
+        ),
+        LineageNode(
+            id="store_country", label=f"countries ({country_count})", type="store", x=600, y=300
+        ),
+        LineageNode(
+            id="store_product", label=f"products ({product_count})", type="store", x=600, y=500
+        ),
+        LineageNode(
+            id="store_tariff", label=f"tariff_rules ({tariff_count})", type="store", x=600, y=700
+        ),
         # Outputs
         LineageNode(id="out_overview", label="总览仪表盘", type="output", x=900, y=100),
         LineageNode(id="out_trade", label="贸易分析", type="output", x=900, y=300),
@@ -135,10 +151,7 @@ def get_quality(db: Session = Depends(get_db)):
 
     # Accuracy: records with positive trade values
     positive_records = (
-        db.query(func.count(TradeRecord.id))
-        .filter(TradeRecord.trade_value_usd > 0)
-        .scalar()
-        or 0
+        db.query(func.count(TradeRecord.id)).filter(TradeRecord.trade_value_usd > 0).scalar() or 0
     )
     accuracy = (positive_records / total_records * 100) if total_records else 0
     metrics.append(
@@ -164,21 +177,21 @@ def get_quality(db: Session = Depends(get_db)):
     metrics.append(QualityMetric(dimension="timeliness", score=timeliness, details=details))
 
     # Consistency: country codes match countries table
-    trade_countries = set(
-        r[0] for r in db.query(distinct(TradeRecord.partner)).all() if r[0]
-    )
-    known_countries = set(
-        r[0] for r in db.query(Country.code).all() if r[0]
-    )
+    trade_countries = {r[0] for r in db.query(distinct(TradeRecord.partner)).all() if r[0]}
+    known_countries = {r[0] for r in db.query(Country.code).all() if r[0]}
     known_countries.add("CHN")
     unmatched = trade_countries - known_countries
-    consistency = ((len(trade_countries) - len(unmatched)) / len(trade_countries) * 100) if trade_countries else 100
+    consistency = (
+        ((len(trade_countries) - len(unmatched)) / len(trade_countries) * 100)
+        if trade_countries
+        else 100
+    )
     metrics.append(
         QualityMetric(
             dimension="consistency",
             score=round(consistency, 1),
             details=f"国家代码一致率 {consistency:.1f}%，"
-                    f"{len(unmatched)}个未知代码: {', '.join(sorted(unmatched)[:5]) if unmatched else '无'}",
+            f"{len(unmatched)}个未知代码: {', '.join(sorted(unmatched)[:5]) if unmatched else '无'}",
         )
     )
 
@@ -209,10 +222,7 @@ def get_catalog(db: Session = Depends(get_db)):
             fields = _SOURCE_FIELDS.get(src.name, ["id", "value", "date"])
             quality = _SOURCE_QUALITY_ESTIMATES.get(src.name, 80.0)
             # Adjust quality based on actual data
-            if src.record_count > 0:
-                quality = min(quality + 5, 100.0)
-            else:
-                quality = max(quality - 20, 0.0)
+            quality = min(quality + 5, 100.0) if src.record_count > 0 else max(quality - 20, 0.0)
 
             last_updated = src.last_sync.strftime("%Y-%m-%d") if src.last_sync else "N/A"
 
@@ -234,7 +244,7 @@ def get_catalog(db: Session = Depends(get_db)):
     # Fallback: compute from actual data (original logic)
     trade_count = db.query(func.count(TradeRecord.id)).scalar() or 0
     country_count = db.query(func.count(Country.code)).scalar() or 0
-    product_count = db.query(func.count(Product.hs_code)).scalar() or 0
+    db.query(func.count(Product.hs_code)).scalar() or 0
     tariff_count = db.query(func.count(TariffRule.id)).scalar() or 0
 
     def _quality_score(model):
@@ -248,69 +258,103 @@ def get_catalog(db: Session = Depends(get_db)):
 
     sources = [
         DataSourceMeta(
-            id="uncomtrade", name="UN Comtrade", url="https://comtradeapi.un.org",
+            id="uncomtrade",
+            name="UN Comtrade",
+            url="https://comtradeapi.un.org",
             description="联合国商品贸易统计数据库，覆盖全球200+经济体双边贸易数据",
-            update_frequency="月度", record_count=trade_count,
+            update_frequency="月度",
+            record_count=trade_count,
             last_updated=f"{max_year}-12" if max_year else "N/A",
-            fields=_SOURCE_FIELDS["UN Comtrade"], quality_score=round(trade_q, 1),
+            fields=_SOURCE_FIELDS["UN Comtrade"],
+            quality_score=round(trade_q, 1),
         ),
         DataSourceMeta(
-            id="worldbank", name="World Bank Open Data", url="https://api.worldbank.org/v2/",
+            id="worldbank",
+            name="World Bank Open Data",
+            url="https://api.worldbank.org/v2/",
             description="世界银行开放数据，GDP/人口/FDI/贸易占比等宏观经济指标",
-            update_frequency="年度", record_count=country_count,
-            last_updated="2025", fields=_SOURCE_FIELDS["World Bank Open Data"],
+            update_frequency="年度",
+            record_count=country_count,
+            last_updated="2025",
+            fields=_SOURCE_FIELDS["World Bank Open Data"],
             quality_score=round(country_q, 1),
         ),
         DataSourceMeta(
-            id="imf_dots", name="IMF DOTS", url="http://dataservices.imf.org/REST/SDMX_JSON.svc/",
+            id="imf_dots",
+            name="IMF DOTS",
+            url="http://dataservices.imf.org/REST/SDMX_JSON.svc/",
             description="IMF贸易方向统计，双边贸易流量验证数据",
-            update_frequency="季度", record_count=trade_count // 3,
-            last_updated="2025", fields=_SOURCE_FIELDS["IMF DOTS"],
+            update_frequency="季度",
+            record_count=trade_count // 3,
+            last_updated="2025",
+            fields=_SOURCE_FIELDS["IMF DOTS"],
             quality_score=round(trade_q * 0.92, 1),
         ),
         DataSourceMeta(
-            id="exchange_rate", name="ExchangeRate-API", url="https://open.er-api.com/v6/latest/USD",
+            id="exchange_rate",
+            name="ExchangeRate-API",
+            url="https://open.er-api.com/v6/latest/USD",
             description="实时汇率数据，覆盖11种东盟+中国货币",
-            update_frequency="每日", record_count=11,
+            update_frequency="每日",
+            record_count=11,
             last_updated=datetime.now().strftime("%Y-%m-%d"),
-            fields=_SOURCE_FIELDS["ExchangeRate-API"], quality_score=90.0,
+            fields=_SOURCE_FIELDS["ExchangeRate-API"],
+            quality_score=90.0,
         ),
         DataSourceMeta(
-            id="commodity", name="IMF Commodity Prices",
+            id="commodity",
+            name="IMF Commodity Prices",
             url="https://dataservices.imf.org/REST/SDMX_JSON.svc/CompactData/PIT",
             description="IMF初级产品价格，80+商品月度价格",
-            update_frequency="月度", record_count=0,
-            last_updated="N/A", fields=_SOURCE_FIELDS["IMF Commodity Prices"],
+            update_frequency="月度",
+            record_count=0,
+            last_updated="N/A",
+            fields=_SOURCE_FIELDS["IMF Commodity Prices"],
             quality_score=88.0,
         ),
         DataSourceMeta(
-            id="gxdata", name="广西公共数据开放平台", url="https://data.gxzf.gov.cn",
+            id="gxdata",
+            name="广西公共数据开放平台",
+            url="https://data.gxzf.gov.cn",
             description="广西数据开放平台，604个API，含商务厅/南宁海关/贸促会数据",
-            update_frequency="不定期", record_count=0,
-            last_updated="N/A", fields=_SOURCE_FIELDS["广西公共数据开放平台"],
+            update_frequency="不定期",
+            record_count=0,
+            last_updated="N/A",
+            fields=_SOURCE_FIELDS["广西公共数据开放平台"],
             quality_score=82.0,
         ),
         DataSourceMeta(
-            id="port_data", name="北部湾港数据", url="http://yqb.gxzf.gov.cn/sjfb/sjxz/",
+            id="port_data",
+            name="北部湾港数据",
+            url="http://yqb.gxzf.gov.cn/sjfb/sjxz/",
             description="北部湾港月度货物/集装箱吞吐量",
-            update_frequency="月度", record_count=0,
-            last_updated="N/A", fields=_SOURCE_FIELDS["北部湾港数据"],
+            update_frequency="月度",
+            record_count=0,
+            last_updated="N/A",
+            fields=_SOURCE_FIELDS["北部湾港数据"],
             quality_score=75.0,
         ),
         DataSourceMeta(
-            id="rcep_tariff", name="RCEP/ACFTA关税数据库",
+            id="rcep_tariff",
+            name="RCEP/ACFTA关税数据库",
             url="https://asean.mendel-online.com",
             description="RCEP/ACFTA关税减让表，原产地规则，降税时间表",
-            update_frequency="年度", record_count=tariff_count,
-            last_updated="2025", fields=_SOURCE_FIELDS["RCEP/ACFTA关税数据库"],
+            update_frequency="年度",
+            record_count=tariff_count,
+            last_updated="2025",
+            fields=_SOURCE_FIELDS["RCEP/ACFTA关税数据库"],
             quality_score=round(tariff_q, 1),
         ),
         DataSourceMeta(
-            id="bdi", name="BDI航运指数", url="https://finance.yahoo.com/quote/%5EBDIY",
+            id="bdi",
+            name="BDI航运指数",
+            url="https://finance.yahoo.com/quote/%5EBDIY",
             description="波罗的海干散货指数，反映国际航运成本",
-            update_frequency="每日", record_count=0,
+            update_frequency="每日",
+            record_count=0,
             last_updated=datetime.now().strftime("%Y-%m-%d"),
-            fields=_SOURCE_FIELDS["BDI航运指数"], quality_score=80.0,
+            fields=_SOURCE_FIELDS["BDI航运指数"],
+            quality_score=80.0,
         ),
     ]
 

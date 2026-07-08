@@ -4,17 +4,16 @@ Generates a unique request ID for each incoming request, attaches it to
 the request state, and echoes it back in the response header for
 distributed tracing and log correlation.
 """
+
 from __future__ import annotations
 
 import time
 import uuid
-from typing import Callable
+from collections.abc import Callable
 
 import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-
-from app.core.config import settings
 
 logger = structlog.get_logger(__name__)
 
@@ -35,9 +34,11 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         # otherwise generate a new one
         incoming_rid = request.headers.get("X-Request-ID")
         traceparent = request.headers.get("traceparent")
-        request_id = incoming_rid or (
-            _extract_trace_id(traceparent) if traceparent else None
-        ) or str(uuid.uuid4())
+        request_id = (
+            incoming_rid
+            or (_extract_trace_id(traceparent) if traceparent else None)
+            or str(uuid.uuid4())
+        )
         request.state.request_id = request_id
 
         client_ip = request.client.host if request.client else "unknown"

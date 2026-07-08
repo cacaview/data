@@ -8,9 +8,9 @@ Exposes real-time data fetching capabilities:
 - GET /datasources/commodity-prices — Commodity price summary
 - POST /datasources/refresh — Trigger data refresh
 """
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from app.models.database import get_db
 from app.models.schemas_db import DataSource
@@ -47,6 +47,7 @@ def get_exchange_rates():
     """Get latest exchange rates for ASEAN + China currencies."""
     try:
         from app.data.exchange_rate_client import get_rates_summary
+
         return get_rates_summary()
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Exchange rate service unavailable: {e}")
@@ -61,6 +62,7 @@ def get_macro_profile(country_code: str):
     """
     try:
         from app.data.worldbank_client import get_country_profile
+
         profile = get_country_profile(country_code)
         return {"country": country_code, "indicators": profile}
     except Exception as e:
@@ -78,6 +80,7 @@ def get_comtrade_summary(partner: str = "VNM", year: str = "2023"):
     try:
         from app.data.comtrade_client import get_trade_summary
         from app.data.etl import COUNTRY_MAP
+
         m49 = COUNTRY_MAP.get(partner, {}).get("m49")
         if not m49:
             raise HTTPException(status_code=400, detail=f"Unknown country code: {partner}")
@@ -94,6 +97,7 @@ def get_commodity_prices():
     """Get latest commodity price summary from IMF."""
     try:
         from app.data.commodity_client import get_commodity_summary
+
         summary = get_commodity_summary()
         return {"commodities": summary, "source": "IMF Primary Commodity Prices"}
     except Exception as e:
@@ -109,9 +113,9 @@ def validate_trade_data(partner: str = "VNM", year: str = "2023"):
         year: Year
     """
     try:
-        from app.data.imf_client import validate_comtrade_data
         from app.data.comtrade_client import get_trade_summary
         from app.data.etl import COUNTRY_MAP
+        from app.data.imf_client import validate_comtrade_data
 
         m49 = COUNTRY_MAP.get(partner, {}).get("m49")
         if not m49:
@@ -138,7 +142,11 @@ def refresh_data(db: Session = Depends(get_db)):
     """Trigger a data refresh from all API sources."""
     try:
         from app.data.cache import clear_all
+
         clear_all()
-        return {"status": "success", "message": "Cache cleared. New data will be fetched on next request."}
+        return {
+            "status": "success",
+            "message": "Cache cleared. New data will be fetched on next request.",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Refresh failed: {e}")

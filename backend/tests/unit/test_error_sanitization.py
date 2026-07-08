@@ -1,6 +1,7 @@
 """Error sanitization unit tests."""
-from app.middleware.errors import _sanitize_message
+
 from app.core.config import Settings
+from app.middleware.errors import _sanitize_message
 
 
 def test_sanitize_in_dev_passes_through(monkeypatch):

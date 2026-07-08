@@ -4,9 +4,10 @@ Pure-Python business logic for trade trend, ranking, comparison,
 and sankey analysis. No SQLAlchemy queries here — all data is
 loaded via trade_repo.
 """
+
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 from sqlalchemy.orm import Session
 
@@ -27,17 +28,17 @@ from app.models.schemas import (
 )
 from app.repositories import trade_repo
 
-
 # === Trend ===
+
 
 def get_trend(
     db: Session,
     *,
-    countries: Optional[Sequence[str]] = None,
-    sections: Optional[Sequence[str]] = None,
-    start_year: Optional[int] = None,
-    end_year: Optional[int] = None,
-) -> List[TrendPoint]:
+    countries: Sequence[str] | None = None,
+    sections: Sequence[str] | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> list[TrendPoint]:
     """Build monthly trend points with country name resolution."""
     rows = trade_repo.fetch_trend_rows(
         db,
@@ -60,9 +61,8 @@ def get_trend(
 
 # === Country compare (radar) ===
 
-def _compute_country_radar(
-    db: Session, code: str
-) -> Optional[CountryRadar]:
+
+def _compute_country_radar(db: Session, code: str) -> CountryRadar | None:
     """Build a CountryRadar for one country. Returns None if no trade data."""
     country = trade_repo.get_country(db, code)
     if not country:
@@ -74,22 +74,14 @@ def _compute_country_radar(
 
     trade_volume = trade_repo.sum_trade_value(db, year=latest_year, partner=code)
     prev_volume = trade_repo.sum_trade_value(db, year=latest_year - 1, partner=code)
-    growth_rate = (
-        ((trade_volume - prev_volume) / prev_volume * 100) if prev_volume else 0.0
-    )
+    growth_rate = ((trade_volume - prev_volume) / prev_volume * 100) if prev_volume else 0.0
 
     # Interdependence: trade / GDP ratio (clamped 0-100)
     gdp_usd = (country.gdp_billion_usd or 1) * 1e9
-    interdependence = (
-        min((trade_volume / gdp_usd) * 100, 100) if gdp_usd else 0.0
-    )
+    interdependence = min((trade_volume / gdp_usd) * 100, 100) if gdp_usd else 0.0
 
-    section_count = trade_repo.count_distinct_sections(
-        db, year=latest_year, partner=code
-    )
-    diversity = min(
-        section_count / HS_SECTION_NORMALIZATION_BASE * 100, 100
-    )
+    section_count = trade_repo.count_distinct_sections(db, year=latest_year, partner=code)
+    diversity = min(section_count / HS_SECTION_NORMALIZATION_BASE * 100, 100)
 
     rcep_utilization = DEFAULT_RCEP_UTILIZATION_PCT if country.rcep_member else 0.0
 
@@ -103,7 +95,7 @@ def _compute_country_radar(
     )
 
 
-def get_country_compare(db: Session) -> List[CountryRadar]:
+def get_country_compare(db: Session) -> list[CountryRadar]:
     """Build radar data for the 10 ASEAN member countries."""
     radars: list[CountryRadar] = []
     for code in ASEAN_COUNTRY_CODES:
@@ -115,7 +107,8 @@ def get_country_compare(db: Session) -> List[CountryRadar]:
 
 # === Ranking ===
 
-def _safe_growth(current: float, previous: float) -> Optional[float]:
+
+def _safe_growth(current: float, previous: float) -> float | None:
     """Compute YoY growth as a percentage. Returns None when previous == 0."""
     if not previous:
         return None
@@ -128,7 +121,7 @@ def _rank_by_group(
     group_by: str,
     latest_year: int,
     limit: int,
-) -> List[RankingItem]:
+) -> list[RankingItem]:
     """Generic ranking: get top N for the given group_by key."""
     rows = trade_repo.sum_trade_value_grouped(db, year=latest_year, group_by=group_by)
     if not rows:
@@ -136,10 +129,8 @@ def _rank_by_group(
     rows = rows[:limit]
 
     # Previous-year totals (single batch query via a second grouped call)
-    prev_rows = trade_repo.sum_trade_value_grouped(
-        db, year=latest_year - 1, group_by=group_by
-    )
-    prev_map = {k: v for k, v in prev_rows}
+    prev_rows = trade_repo.sum_trade_value_grouped(db, year=latest_year - 1, group_by=group_by)
+    prev_map = dict(prev_rows)
 
     total_all = trade_repo.sum_trade_value(db, year=latest_year)
     if total_all <= 0:
@@ -170,7 +161,7 @@ def get_ranking(
     *,
     rank_type: str,  # 'country' or 'product'
     limit: int = RANKING_DEFAULT_LIMIT,
-) -> List[RankingItem]:
+) -> list[RankingItem]:
     """Top-N ranking by country (partner) or product (HS section)."""
     if not (1 <= limit <= RANKING_MAX_LIMIT):
         limit = RANKING_DEFAULT_LIMIT
@@ -180,12 +171,11 @@ def get_ranking(
         return []
 
     group_by = "partner" if rank_type == "country" else "hs_section"
-    return _rank_by_group(
-        db, group_by=group_by, latest_year=latest_year, limit=limit
-    )
+    return _rank_by_group(db, group_by=group_by, latest_year=latest_year, limit=limit)
 
 
 # === Sankey ===
+
 
 def get_sankey(db: Session, year: int) -> SankeyData:
     """Build sankey data: partners -> product sections for a year."""
@@ -197,10 +187,7 @@ def get_sankey(db: Session, year: int) -> SankeyData:
     name_map = trade_repo.get_country_name_map(db, partner_codes)
     sections = sorted({r[1] for r in rows if r[1]})
 
-    nodes = [
-        SankeyNode(name=name_map.get(c, c), category="country")
-        for c in sorted(partner_codes)
-    ]
+    nodes = [SankeyNode(name=name_map.get(c, c), category="country") for c in sorted(partner_codes)]
     nodes += [SankeyNode(name=s, category="product") for s in sections]
 
     links = [

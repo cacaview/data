@@ -1,4 +1,5 @@
 """Overview dashboard routes -- KPI summary, map, sankey, mini-trend."""
+
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
@@ -7,16 +8,16 @@ from sqlalchemy.orm import Session
 
 from app.core.constants import get_country_coords
 from app.models.database import get_db
-from app.models.schemas_db import TradeRecord, Country
 from app.models.schemas import (
     KPISummary,
-    TradeMapPoint,
-    TradeMapArc,
     SankeyData,
-    SankeyNode,
     SankeyLink,
+    SankeyNode,
+    TradeMapArc,
+    TradeMapPoint,
     TrendPoint,
 )
+from app.models.schemas_db import Country, TradeRecord
 
 router = APIRouter()
 
@@ -114,10 +115,17 @@ def get_summary(db: Session = Depends(get_db), current_year: int = Depends(get_c
         .limit(5)
         .all()
     )
-    partner_names = {c.code: c.name_cn for c in db.query(Country).filter(Country.code.in_([r[0] for r in top_partner_rows])).all()}
+    partner_names = {
+        c.code: c.name_cn
+        for c in db.query(Country).filter(Country.code.in_([r[0] for r in top_partner_rows])).all()
+    }
     top_partners_list = [
-        {"code": code, "name": partner_names.get(code, code), "value": round(total, 2),
-         "share": round(total / total_current * 100, 2) if total_current else 0}
+        {
+            "code": code,
+            "name": partner_names.get(code, code),
+            "value": round(total, 2),
+            "share": round(total / total_current * 100, 2) if total_current else 0,
+        }
         for code, total in top_partner_rows
     ]
 
@@ -130,23 +138,35 @@ def get_summary(db: Session = Depends(get_db), current_year: int = Depends(get_c
     # Top growth products (YoY) for frontend compatibility
     cur_section_totals = dict(
         db.query(TradeRecord.hs_section, func.sum(TradeRecord.trade_value_usd))
-        .filter(TradeRecord.year == current_year, TradeRecord.reporter == "CHN", TradeRecord.hs_section.isnot(None))
-        .group_by(TradeRecord.hs_section).all()
+        .filter(
+            TradeRecord.year == current_year,
+            TradeRecord.reporter == "CHN",
+            TradeRecord.hs_section.isnot(None),
+        )
+        .group_by(TradeRecord.hs_section)
+        .all()
     )
     prev_section_totals = dict(
         db.query(TradeRecord.hs_section, func.sum(TradeRecord.trade_value_usd))
-        .filter(TradeRecord.year == current_year - 1, TradeRecord.reporter == "CHN", TradeRecord.hs_section.isnot(None))
-        .group_by(TradeRecord.hs_section).all()
+        .filter(
+            TradeRecord.year == current_year - 1,
+            TradeRecord.reporter == "CHN",
+            TradeRecord.hs_section.isnot(None),
+        )
+        .group_by(TradeRecord.hs_section)
+        .all()
     )
     growth_items = []
     for section, cur_val in cur_section_totals.items():
         prev_val = prev_section_totals.get(section, 0) or 0
         if not prev_val:
             continue
-        growth_items.append({
-            "hs_section": section,
-            "growth_pct": round((cur_val - prev_val) / prev_val * 100, 2),
-        })
+        growth_items.append(
+            {
+                "hs_section": section,
+                "growth_pct": round((cur_val - prev_val) / prev_val * 100, 2),
+            }
+        )
     growth_items.sort(key=lambda x: x["growth_pct"], reverse=True)
     top_growth_products_list = growth_items[:5]
 
@@ -261,7 +281,9 @@ def get_trade_map(db: Session = Depends(get_db), current_year: int = Depends(get
 
 # ── GET /sankey ─────────────────────────────────────────────────────────────
 @router.get("/sankey", response_model=SankeyData)
-def get_overview_sankey(db: Session = Depends(get_db), current_year: int = Depends(get_current_year)):
+def get_overview_sankey(
+    db: Session = Depends(get_db), current_year: int = Depends(get_current_year)
+):
     """Sankey diagram: top-5 countries -> product sections for current year."""
     # Top 5 countries by trade value
     top_countries = (
@@ -353,8 +375,6 @@ def get_trend_mini(db: Session = Depends(get_db), current_year: int = Depends(ge
             .filter(TradeRecord.year == y, TradeRecord.month == m)
             .scalar()
         )
-        results.append(
-            TrendPoint(date=f"{y}-{m:02d}", value=round(total, 2))
-        )
+        results.append(TrendPoint(date=f"{y}-{m:02d}", value=round(total, 2)))
 
     return results

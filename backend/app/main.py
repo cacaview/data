@@ -6,6 +6,7 @@ FastAPI application entry point. Wires up:
 - Error handling with sanitized responses
 - Routers (domain + health)
 """
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -34,8 +35,8 @@ async def lifespan(app: FastAPI):
     validate_production_config()
 
     # Lazy imports to avoid loading models at import time
-    from app.models.database import engine, Base
     from app.mock_data.init_db import init_database
+    from app.models.database import Base, engine
 
     logger.info(
         "startup.begin",
@@ -65,7 +66,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID", "X-Response-Time-Ms", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+    expose_headers=[
+        "X-Request-ID",
+        "X-Response-Time-Ms",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+    ],
 )
 
 # 2. Request tracking (request_id, timing) — applied to all requests
@@ -85,9 +91,16 @@ register_exception_handlers(app)
 
 # === Routers ===
 # Lazy import to ensure settings are loaded first
-from app.api.routes import (
-    overview, trade, ai_predict, tariff, chat, assets,
-    datasources, analytics, health,
+from app.api.routes import (  # noqa: E402
+    ai_predict,
+    analytics,
+    assets,
+    chat,
+    datasources,
+    health,
+    overview,
+    tariff,
+    trade,
 )
 
 app.include_router(health.router)

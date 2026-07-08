@@ -4,14 +4,13 @@ Focuses on:
 - Pure business rules (no SQL: use in-memory fixtures)
 - Edge cases (empty data, missing country, etc.)
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations
 
 from app.services import trade_service
 
-
 # === Trend ===
+
 
 def test_trend_empty_db_returns_empty_list(session):
     assert trade_service.get_trend(session) == []
@@ -36,6 +35,7 @@ def test_trend_filters_by_year_range(session, sample_trade_records):
 
 # === Country compare ===
 
+
 def test_country_compare_returns_only_asean_countries_with_data(
     session, sample_countries, sample_trade_records
 ):
@@ -45,9 +45,7 @@ def test_country_compare_returns_only_asean_countries_with_data(
     assert countries == {"越南", "泰国", "印度尼西亚"}
 
 
-def test_country_compare_radar_fields_in_range(
-    session, sample_countries, sample_trade_records
-):
+def test_country_compare_radar_fields_in_range(session, sample_countries, sample_trade_records):
     radars = trade_service.get_country_compare(session)
     for r in radars:
         assert 0 <= r.interdependence <= 100
@@ -58,11 +56,12 @@ def test_country_compare_radar_fields_in_range(
 
 # === Ranking ===
 
+
 def test_ranking_by_country_returns_top_n(session, sample_trade_records):
     items = trade_service.get_ranking(session, rank_type="country", limit=2)
     assert len(items) <= 2
     # All items sorted descending by value
-    for a, b in zip(items, items[1:]):
+    for a, b in zip(items, items[1:], strict=False):
         assert a.value >= b.value
 
 
@@ -94,6 +93,7 @@ def test_ranking_empty_db(session):
 
 
 # === Sankey ===
+
 
 def test_sankey_empty_year(session):
     data = trade_service.get_sankey(session, year=1999)

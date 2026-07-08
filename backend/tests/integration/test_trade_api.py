@@ -31,7 +31,7 @@ def test_ranking_country_default(client, sample_trade_records):
     items = r.json()
     assert items
     # Descending by value
-    for a, b in zip(items, items[1:]):
+    for a, b in zip(items, items[1:], strict=False):
         assert a["value"] >= b["value"]
 
 

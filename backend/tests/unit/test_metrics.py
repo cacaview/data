@@ -1,4 +1,5 @@
 """Metrics registry unit tests."""
+
 from app.core.metrics import MetricsRegistry
 
 

@@ -8,12 +8,12 @@ A minimal implementation that:
 For multi-worker deployments, replace with prometheus_client or
 opentelemetry-exporter-prometheus.
 """
+
 from __future__ import annotations
 
 import threading
 import time
 from collections import defaultdict
-from typing import Dict, Tuple
 
 import structlog
 
@@ -25,15 +25,13 @@ class MetricsRegistry:
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._request_count: Dict[Tuple[str, str, int], int] = defaultdict(int)
-        self._request_duration_sum_ms: Dict[Tuple[str, str], float] = defaultdict(float)
-        self._request_duration_count: Dict[Tuple[str, str], int] = defaultdict(int)
-        self._errors_by_code: Dict[str, int] = defaultdict(int)
+        self._request_count: dict[tuple[str, str, int], int] = defaultdict(int)
+        self._request_duration_sum_ms: dict[tuple[str, str], float] = defaultdict(float)
+        self._request_duration_count: dict[tuple[str, str], int] = defaultdict(int)
+        self._errors_by_code: dict[str, int] = defaultdict(int)
         self._start_time = time.time()
 
-    def record_request(
-        self, method: str, path: str, status_code: int, duration_ms: float
-    ) -> None:
+    def record_request(self, method: str, path: str, status_code: int, duration_ms: float) -> None:
         with self._lock:
             self._request_count[(path, method, status_code)] += 1
             self._request_duration_sum_ms[(path, method)] += duration_ms
@@ -78,9 +76,7 @@ class MetricsRegistry:
             lines.append("# HELP actap_http_errors_total Total 4xx/5xx responses")
             lines.append("# TYPE actap_http_errors_total counter")
             for status, count in sorted(self._errors_by_code.items()):
-                lines.append(
-                    f'actap_http_errors_total{{status="{status}"}} {count}'
-                )
+                lines.append(f'actap_http_errors_total{{status="{status}"}} {count}')
 
             return "\n".join(lines) + "\n"
 

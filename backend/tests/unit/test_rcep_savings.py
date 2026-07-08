@@ -1,4 +1,5 @@
 """RCEP tariff savings tests."""
+
 from app.data.analytics import calculate_rcep_savings
 
 
@@ -46,7 +47,11 @@ def test_no_fta_uses_rcep():
 
 def test_zero_mfn_zero_savings():
     result = calculate_rcep_savings(
-        hs_code="x", mfn_rate=0.0, rcep_rate=0.0, fta_rate=None, trade_value=100,
+        hs_code="x",
+        mfn_rate=0.0,
+        rcep_rate=0.0,
+        fta_rate=None,
+        trade_value=100,
     )
     assert result["savings_usd"] == 0.0
     assert result["savings_pct"] == 0.0
@@ -54,7 +59,11 @@ def test_zero_mfn_zero_savings():
 
 def test_zero_trade_value():
     result = calculate_rcep_savings(
-        hs_code="x", mfn_rate=10.0, rcep_rate=0.0, fta_rate=None, trade_value=0,
+        hs_code="x",
+        mfn_rate=10.0,
+        rcep_rate=0.0,
+        fta_rate=None,
+        trade_value=0,
     )
     assert result["duty_mfn"] == 0
     assert result["duty_best"] == 0

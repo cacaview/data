@@ -3,9 +3,8 @@
 These routes delegate all business logic to trade_service.
 They only handle request validation and response serialization.
 """
-from __future__ import annotations
 
-from typing import List, Optional
+from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -23,12 +22,12 @@ from app.services import trade_service
 router = APIRouter()
 
 
-@router.get("/trend", response_model=List[TrendPoint])
+@router.get("/trend", response_model=list[TrendPoint])
 def get_trend(
-    countries: Optional[str] = Query(None, description="Comma-separated ISO codes"),
-    products: Optional[str] = Query(None, description="Comma-separated HS sections"),
-    start_year: Optional[int] = Query(None),
-    end_year: Optional[int] = Query(None),
+    countries: str | None = Query(None, description="Comma-separated ISO codes"),
+    products: str | None = Query(None, description="Comma-separated HS sections"),
+    start_year: int | None = Query(None),
+    end_year: int | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """Monthly trade trend, optionally filtered by countries and products."""
@@ -43,13 +42,13 @@ def get_trend(
     )
 
 
-@router.get("/country-compare", response_model=List[CountryRadar])
+@router.get("/country-compare", response_model=list[CountryRadar])
 def get_country_compare(db: Session = Depends(get_db)):
     """Radar chart data for the 10 ASEAN member countries."""
     return trade_service.get_country_compare(db)
 
 
-@router.get("/ranking", response_model=List[RankingItem])
+@router.get("/ranking", response_model=list[RankingItem])
 def get_ranking(
     type: str = Query("country", pattern="^(country|product)$"),
     limit: int = Query(RANKING_DEFAULT_LIMIT, ge=1, le=RANKING_MAX_LIMIT),
@@ -68,7 +67,7 @@ def get_trade_sankey(
     return trade_service.get_sankey(db, year=year)
 
 
-def _split_csv(value: Optional[str]) -> List[str]:
+def _split_csv(value: str | None) -> list[str]:
     """Parse a comma-separated string into a list of trimmed non-empty tokens."""
     if not value:
         return []

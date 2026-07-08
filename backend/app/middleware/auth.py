@@ -5,10 +5,11 @@ configured (empty), authentication is disabled (development mode).
 
 Public endpoints (no auth required): /docs, /openapi.json, /api/health
 """
+
 from __future__ import annotations
 
 import hmac
-from typing import Callable
+from collections.abc import Callable
 
 import structlog
 from fastapi import Request, status

@@ -5,10 +5,11 @@ Provides:
 - BusinessError for domain-level errors with code + message
 - FastAPI exception handlers that return sanitized responses in production
 """
+
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request, status
@@ -22,6 +23,7 @@ logger = structlog.get_logger(__name__)
 def _get_settings():
     """Lazily resolve settings so tests can monkeypatch app.core.config.settings."""
     from app.core.config import settings
+
     return settings
 
 
@@ -31,6 +33,7 @@ class ErrorCode(str, Enum):
     Codes are namespaced by category for easy filtering and aggregation.
     Format: <CATEGORY>_<SPECIFIC_ERROR>
     """
+
     # Generic
     INTERNAL_ERROR = "INTERNAL_ERROR"
     NOT_FOUND = "NOT_FOUND"
@@ -67,7 +70,7 @@ class BusinessError(Exception):
         code: ErrorCode,
         message: str,
         status_code: int = status.HTTP_400_BAD_REQUEST,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         self.code = code
         self.message = message
@@ -75,7 +78,7 @@ class BusinessError(Exception):
         self.details = details or {}
         super().__init__(message)
 
-    def to_response(self, request_id: Optional[str] = None) -> Dict[str, Any]:
+    def to_response(self, request_id: str | None = None) -> dict[str, Any]:
         """Serialize error for HTTP response."""
         body = {
             "error_code": self.code.value,
@@ -90,8 +93,16 @@ class BusinessError(Exception):
 
 # Patterns that suggest sensitive data leakage; replace in user-visible messages
 _SENSITIVE_PATTERNS = (
-    "api_key", "apikey", "password", "passwd", "secret", "token",
-    "openai", "deepseek", "sk-", "bearer ",
+    "api_key",
+    "apikey",
+    "password",
+    "passwd",
+    "secret",
+    "token",
+    "openai",
+    "deepseek",
+    "sk-",
+    "bearer ",
 )
 
 
@@ -137,7 +148,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         request_id = getattr(request.state, "request_id", None)
         message = (
             "An internal error occurred. Please contact support with the request_id."
-            if exc.status_code >= 500 and settings.is_production
+            if exc.status_code >= 500 and _get_settings().is_production
             else _sanitize_message(str(exc.detail))
         )
         body = {
@@ -170,11 +181,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         # Sanitize field-level errors (they may echo back user input)
         safe_errors = []
         for err in exc.errors():
-            safe_errors.append({
-                "field": ".".join(str(loc) for loc in err.get("loc", [])),
-                "type": err.get("type"),
-                "message": _sanitize_message(err.get("msg", "")),
-            })
+            safe_errors.append(
+                {
+                    "field": ".".join(str(loc) for loc in err.get("loc", [])),
+                    "type": err.get("type"),
+                    "message": _sanitize_message(err.get("msg", "")),
+                }
+            )
         body = {
             "error_code": ErrorCode.VALIDATION_ERROR.value,
             "message": "Request validation failed",

@@ -5,11 +5,10 @@ Supports multi-environment setup (dev / staging / prod).
 
 Environment variables are loaded from .env (dev) or system env (prod).
 """
+
 from __future__ import annotations
 
-import os
 from enum import Enum
-from typing import List, Optional
 
 from dotenv import load_dotenv
 from pydantic import Field, field_validator
@@ -21,6 +20,7 @@ load_dotenv()
 
 class Environment(str, Enum):
     """Deployment environment."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     All settings are validated at startup. Missing required values cause
     immediate failure with a clear error message.
     """
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -60,7 +61,7 @@ class Settings(BaseSettings):
     # In development, defaults to "*" for convenience
     CORS_ORIGINS: str = "*"
     # API Key for protected endpoints. If empty, authentication is disabled.
-    API_KEY: Optional[str] = None
+    API_KEY: str | None = None
     # Paths that require API key (comma-separated patterns)
     API_KEY_PROTECTED_PATHS: str = "/api/datasources/refresh,/api/chat"
 
@@ -81,7 +82,7 @@ class Settings(BaseSettings):
 
     # === CORS parsed ===
     @property
-    def cors_origins_list(self) -> List[str]:
+    def cors_origins_list(self) -> list[str]:
         """Parse CORS_ORIGINS into a list.
 
         Returns:
@@ -97,7 +98,7 @@ class Settings(BaseSettings):
         return self.ENVIRONMENT == Environment.PRODUCTION
 
     @property
-    def api_key_protected_paths_list(self) -> List[str]:
+    def api_key_protected_paths_list(self) -> list[str]:
         """Parse API_KEY_PROTECTED_PATHS into a list."""
         if not self.API_KEY_PROTECTED_PATHS:
             return []
@@ -140,7 +141,7 @@ def validate_production_config() -> None:
     if not settings.is_production:
         return
 
-    errors: List[str] = []
+    errors: list[str] = []
 
     # CORS must be restricted in production
     if settings.cors_origins_list == ["*"]:
@@ -151,15 +152,11 @@ def validate_production_config() -> None:
 
     # API key should be set in production
     if not settings.API_KEY:
-        errors.append(
-            "API_KEY must be set in production to protect sensitive endpoints"
-        )
+        errors.append("API_KEY must be set in production to protect sensitive endpoints")
 
     # OpenAI key must not be the placeholder
     if settings.OPENAI_API_KEY in ("", "sk-your-key-here"):
-        errors.append(
-            "OPENAI_API_KEY must be set to a real key in production"
-        )
+        errors.append("OPENAI_API_KEY must be set to a real key in production")
 
     if errors:
         raise RuntimeError(

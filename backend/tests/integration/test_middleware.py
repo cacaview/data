@@ -1,5 +1,6 @@
 """Middleware integration tests through HTTP."""
 
+
 def test_rate_limit_headers_present(client):
     r = client.get("/api/health")
     assert r.status_code == 200

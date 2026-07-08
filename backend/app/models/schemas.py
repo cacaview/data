@@ -1,6 +1,6 @@
 """Pydantic response schemas."""
+
 from pydantic import BaseModel
-from typing import Optional
 
 
 # ── Overview ──
@@ -39,7 +39,7 @@ class TradeMapArc(BaseModel):
 
 class SankeyNode(BaseModel):
     name: str
-    category: Optional[str] = None
+    category: str | None = None
 
 
 class SankeyLink(BaseModel):
@@ -57,8 +57,8 @@ class SankeyData(BaseModel):
 class TrendPoint(BaseModel):
     date: str
     value: float
-    country: Optional[str] = None
-    product: Optional[str] = None
+    country: str | None = None
+    product: str | None = None
 
 
 class CountryRadar(BaseModel):
@@ -73,17 +73,17 @@ class CountryRadar(BaseModel):
 class RankingItem(BaseModel):
     name: str
     value: float
-    growth: Optional[float] = None
-    share: Optional[float] = None
+    growth: float | None = None
+    share: float | None = None
 
 
 # ── AI Prediction ──
 class PredictionPoint(BaseModel):
     date: str
-    actual: Optional[float] = None
-    predicted: Optional[float] = None
-    lower: Optional[float] = None
-    upper: Optional[float] = None
+    actual: float | None = None
+    predicted: float | None = None
+    lower: float | None = None
+    upper: float | None = None
 
 
 class PredictionResult(BaseModel):
@@ -104,7 +104,7 @@ class ClusterItem(BaseModel):
 
 class RiskAlert(BaseModel):
     date: str
-    level: str          # high / medium / low
+    level: str  # high / medium / low
     country: str
     description: str
     suggestion: str
@@ -127,7 +127,7 @@ class TariffResult(BaseModel):
     target_country: str
     mfn_rate: float
     rcep_rate: float
-    fta_rate: Optional[float]
+    fta_rate: float | None
     best_rate: float
     best_scheme: str
     value_usd: float
@@ -138,11 +138,11 @@ class TariffResult(BaseModel):
     rule_of_origin: str
     cumulation_rule: str
     # Frontend-aligned aliases (kept in sync with the backend-native fields)
-    declared_value_usd: Optional[float] = None
-    applicable_rate: Optional[float] = None
-    applicable_basis: Optional[str] = None
-    duty_usd: Optional[float] = None
-    savings_vs_mfn_usd: Optional[float] = None
+    declared_value_usd: float | None = None
+    applicable_rate: float | None = None
+    applicable_basis: str | None = None
+    duty_usd: float | None = None
+    savings_vs_mfn_usd: float | None = None
 
 
 # ── Chat ──
@@ -153,9 +153,9 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     # Frontend-aligned alias — page code reads `data.answer || data.content || data.message`.
-    answer: Optional[str] = None
-    chart_type: Optional[str] = None
-    chart_data: Optional[dict] = None
+    answer: str | None = None
+    chart_type: str | None = None
+    chart_data: dict | None = None
 
     def model_post_init(self, __context):
         # Auto-mirror `reply` into `answer` when not explicitly set,
@@ -168,7 +168,7 @@ class ChatResponse(BaseModel):
 class LineageNode(BaseModel):
     id: str
     label: str
-    type: str    # source / process / store / output
+    type: str  # source / process / store / output
     x: float
     y: float
 
@@ -184,7 +184,7 @@ class LineageGraph(BaseModel):
 
 
 class QualityMetric(BaseModel):
-    dimension: str   # completeness / accuracy / timeliness / consistency
+    dimension: str  # completeness / accuracy / timeliness / consistency
     score: float
     details: str
 

@@ -6,12 +6,13 @@ Implements P0 killer features:
 - /upstreamness: A2 - Value chain position index
 - /tariff-savings: B2 - RCEP tariff savings calculator
 """
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.models.database import get_db
-from app.models.schemas_db import TradeRecord, Country, TariffRule
+from app.models.schemas_db import Country, TariffRule, TradeRecord
 
 router = APIRouter()
 
@@ -40,15 +41,18 @@ def get_burst_radar(
     # Convert to list of dicts for the analytics module
     trade_data = []
     for r in records:
-        trade_data.append({
-            "hs_code": r.hs_code,
-            "trade_value_usd": r.trade_value_usd,
-            "year": r.year,
-            "month": r.month,
-            "id": r.id,
-        })
+        trade_data.append(
+            {
+                "hs_code": r.hs_code,
+                "trade_value_usd": r.trade_value_usd,
+                "year": r.year,
+                "month": r.month,
+                "id": r.id,
+            }
+        )
 
     from app.data.analytics import detect_burst_products
+
     result = detect_burst_products(trade_data, threshold_pct=threshold)
 
     # Enrich with country/product names
@@ -77,6 +81,7 @@ def get_risk_dashboard(
     risk_factors = _compute_risk_factors(country, db)
 
     from app.data.analytics import compute_risk_score
+
     result = compute_risk_score(risk_factors)
     result["country"] = country
     result["country_name"] = country_obj.name_cn if country_obj else country
@@ -131,6 +136,7 @@ def get_upstreamness(
             trade_flows[(r.partner, r.hs_chapter)] = r.total_value or 0
 
     from app.data.analytics import compute_upstreamness
+
     indices = compute_upstreamness(trade_flows)
 
     # Enrich with country names
@@ -138,12 +144,18 @@ def get_upstreamness(
     result = []
     for code, idx in sorted(indices.items(), key=lambda x: x[1], reverse=True):
         c = countries.get(code)
-        result.append({
-            "country": code,
-            "country_name": c.name_cn if c else code,
-            "upstreamness_index": idx,
-            "position": "上游（原材料/中间品）" if idx > 3 else "中游" if idx > 2 else "下游（终端消费品）",
-        })
+        result.append(
+            {
+                "country": code,
+                "country_name": c.name_cn if c else code,
+                "upstreamness_index": idx,
+                "position": "上游（原材料/中间品）"
+                if idx > 3
+                else "中游"
+                if idx > 2
+                else "下游（终端消费品）",
+            }
+        )
 
     return {"year": year, "upstreamness": result}
 
@@ -174,6 +186,7 @@ def get_tariff_savings(
         trade_values[r[0]] = r[1] or 0
 
     from app.data.analytics import calculate_rcep_savings
+
     savings_list = []
     total_savings = 0
 
@@ -183,8 +196,11 @@ def get_tariff_savings(
             continue
 
         result = calculate_rcep_savings(
-            rule.hs_code, rule.mfn_rate or 0, rule.rcep_rate or 0,
-            rule.fta_rate, trade_val,
+            rule.hs_code,
+            rule.mfn_rate or 0,
+            rule.rcep_rate or 0,
+            rule.fta_rate,
+            trade_val,
         )
         result["rule_of_origin"] = rule.rule_of_origin or ""
         savings_list.append(result)
@@ -220,4 +236,6 @@ def _compute_risk_factors(country: str, db: Session) -> dict:
         "LAO": {"fx": 50, "logistics": 45, "tariff": 35, "political": 40, "disaster": 30},
         "BRN": {"fx": 20, "logistics": 25, "tariff": 15, "political": 15, "disaster": 20},
     }
-    return country_risk.get(country, {"fx": 50, "logistics": 50, "tariff": 50, "political": 50, "disaster": 50})
+    return country_risk.get(
+        country, {"fx": 50, "logistics": 50, "tariff": 50, "political": 50, "disaster": 50}
+    )

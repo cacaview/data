@@ -6,10 +6,11 @@ Provides:
 - per-test app instance (avoids cross-test state)
 - sample data fixtures for trade records, countries, etc.
 """
+
 from __future__ import annotations
 
 import os
-from typing import Iterator
+from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,10 +28,14 @@ os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("RATE_LIMIT_PER_MINUTE", "10000")
 os.environ.setdefault("RATE_LIMIT_STRICT_PER_MINUTE", "10000")
 
-from app.models.schemas_db import (  # noqa: E402
-    Base, Country, Product, TradeRecord, TariffRule, DataSource,
-)
+import contextlib
+
 from app.models import database as _database  # noqa: E402
+from app.models.schemas_db import (  # noqa: E402
+    Base,
+    Country,
+    TradeRecord,
+)
 
 
 @pytest.fixture(scope="function")
@@ -64,10 +69,8 @@ def engine(monkeypatch):
         except Exception:
             conn = None
         if conn is not None:
-            try:
+            with contextlib.suppress(Exception):
                 conn.close()
-            except Exception:
-                pass
         test_engine.dispose()
 
 
@@ -86,15 +89,39 @@ def session(engine) -> Iterator:
 def sample_countries(session) -> list[Country]:
     """Insert 3 sample countries and return them."""
     countries = [
-        Country(code="VNM", name_cn="越南", name_en="Vietnam",
-                asean_member=1, rcep_member=1, gdp_billion_usd=400.0,
-                population_million=98.0, latitude=14.0, longitude=108.0),
-        Country(code="THA", name_cn="泰国", name_en="Thailand",
-                asean_member=1, rcep_member=1, gdp_billion_usd=500.0,
-                population_million=70.0, latitude=15.0, longitude=100.0),
-        Country(code="IDN", name_cn="印度尼西亚", name_en="Indonesia",
-                asean_member=1, rcep_member=1, gdp_billion_usd=1300.0,
-                population_million=275.0, latitude=-5.0, longitude=120.0),
+        Country(
+            code="VNM",
+            name_cn="越南",
+            name_en="Vietnam",
+            asean_member=1,
+            rcep_member=1,
+            gdp_billion_usd=400.0,
+            population_million=98.0,
+            latitude=14.0,
+            longitude=108.0,
+        ),
+        Country(
+            code="THA",
+            name_cn="泰国",
+            name_en="Thailand",
+            asean_member=1,
+            rcep_member=1,
+            gdp_billion_usd=500.0,
+            population_million=70.0,
+            latitude=15.0,
+            longitude=100.0,
+        ),
+        Country(
+            code="IDN",
+            name_cn="印度尼西亚",
+            name_en="Indonesia",
+            asean_member=1,
+            rcep_member=1,
+            gdp_billion_usd=1300.0,
+            population_million=275.0,
+            latitude=-5.0,
+            longitude=120.0,
+        ),
     ]
     for c in countries:
         session.add(c)
@@ -113,11 +140,18 @@ def sample_trade_records(session, sample_countries) -> list[TradeRecord]:
                 seasonal = 1.1 if month in (3, 6, 9) else 1.0
                 records.append(
                     TradeRecord(
-                        year=year, month=month, reporter="CHN", partner=c.code,
-                        hs_code="854232", hs_chapter=85, hs_section="XVI",
+                        year=year,
+                        month=month,
+                        reporter="CHN",
+                        partner=c.code,
+                        hs_code="854232",
+                        hs_chapter=85,
+                        hs_section="XVI",
                         trade_value_usd=base * seasonal,
-                        quantity=base / 100, unit="kg",
-                        trade_flow="export", source="test",
+                        quantity=base / 100,
+                        unit="kg",
+                        trade_flow="export",
+                        source="test",
                     )
                 )
     for r in records:
@@ -153,6 +187,7 @@ def client(engine, monkeypatch) -> Iterator[TestClient]:
     # `app.main` resolves the attribute on the module at call time, so
     # patching `init_db.init_database` is enough.
     from app.mock_data import init_db as init_mod
+
     monkeypatch.setattr(init_mod, "init_database", lambda: None)
 
     real_app.dependency_overrides[db_mod.get_db] = _override_get_db
@@ -167,6 +202,7 @@ def client(engine, monkeypatch) -> Iterator[TestClient]:
 def _reset_structlog_context():
     """Clear structlog contextvars between tests to avoid leakage."""
     import structlog
+
     structlog.contextvars.clear_contextvars()
     yield
     structlog.contextvars.clear_contextvars()
@@ -180,6 +216,7 @@ def _close_global_engine():
     yield
     try:
         from app.models import database as _db
+
         _db.engine.pool.dispose()
         # NullPool/StaticPool still hold the raw DBAPI connection.
         try:

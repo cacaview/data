@@ -5,9 +5,11 @@ a sensible default for development). When using SQLite, the database
 file is resolved relative to DATA_DIR so it lives outside the source
 tree.
 """
+
 import os
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 # Resolve settings from environment. Imported lazily to avoid pulling
 # pydantic-settings during test collection when only the engine is needed.
