@@ -4,7 +4,7 @@ import { SendOutlined, RobotOutlined, UserOutlined, BulbOutlined } from '@ant-de
 import ReactECharts from 'echarts-for-react';
 import { askChat, getChatSuggestions } from '../../services/api';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 interface ChatMessage {
   id: string;
@@ -142,7 +142,7 @@ const AIAssistant: React.FC = () => {
 
   useEffect(() => {
     getChatSuggestions()
-      .then((res) => setSuggestions(res.data?.suggestions || res.data || []))
+      .then((res) => setSuggestions(Array.isArray(res) ? res : []))
       .catch(() => {
         setSuggestions([
           '中国与东盟2024年贸易总额是多少？',
@@ -174,13 +174,13 @@ const AIAssistant: React.FC = () => {
 
     try {
       const res = await askChat(msg);
-      const data = res.data;
+      const data = res as unknown as Record<string, unknown>;
       const assistantMsg: ChatMessage = {
         id: `a-${Date.now()}`,
         role: 'assistant',
-        content: data.answer || data.content || data.message || '抱歉，暂时无法回答该问题。',
+        content: (data.answer || data.content || data.message || '抱歉，暂时无法回答该问题。') as string,
         timestamp: Date.now(),
-        chart: data.chart_type ? { chart_type: data.chart_type, chart_data: data.chart_data } : undefined,
+        chart: data.chart_type ? { chart_type: data.chart_type as string, chart_data: data.chart_data } : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch {

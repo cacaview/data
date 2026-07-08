@@ -140,14 +140,14 @@ const TradeMap: React.FC<TradeMapProps> = ({ points, arcs }) => {
     };
   });
 
-  const option: echarts.EChartsOption = {
+  const option = {
     tooltip: {
       trigger: 'item',
       backgroundColor: '#fff',
       borderColor: '#e8e8e8',
       borderWidth: 1,
       textStyle: { color: '#0b0b0b', fontSize: 13 },
-      formatter(params: echarts.DefaultLabelFormatterCallbackParams) {
+      formatter(params: { dataType?: string; data?: Record<string, unknown> }) {
         // Node hover
         if (params.dataType === 'node') {
           const d = params.data as typeof nodes[0];
@@ -199,8 +199,8 @@ const TradeMap: React.FC<TradeMapProps> = ({ points, arcs }) => {
         type: 'graph',
         layout: 'none',
         roam: false,
-        data: nodes as unknown as echarts.GraphSeriesOption['data'],
-        links: edges as unknown as echarts.GraphSeriesOption['links'],
+        data: nodes,
+        links: edges,
         emphasis: {
           focus: 'adjacency',
           blurScope: 'coordinateSystem',

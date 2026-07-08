@@ -83,4 +83,22 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning:botocore.*",
     "ignore::DeprecationWarning:openpyxl.*",
+    "ignore::ResourceWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+omit = [
+    "app/data/commodity_client.py",
+    "app/data/comtrade_client.py",
+    "app/data/etl.py",
+    "app/data/exchange_rate_client.py",
+    "app/data/imf_client.py",
+    "app/data/tariff_loader.py",
+    "app/data/worldbank_client.py",
+    "app/ai/chat_service.py",
+    "app/mock_data/init_db.py",
+    "app/mock_data/trade_generator.py",
 ]

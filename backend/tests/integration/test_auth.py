@@ -1,5 +1,5 @@
 """API key authentication integration tests."""
-import os
+
 import pytest
 
 
@@ -9,16 +9,22 @@ def client_with_auth(monkeypatch, engine):
     monkeypatch.setenv("API_KEY", "test-secret-key-12345")
     # Re-import settings (rebuild)
     from app.core.config import Settings
-    monkeypatch.setattr("app.core.config.settings",
-                        Settings(API_KEY="test-secret-key-12345",
-                                 CORS_ORIGINS="*",
-                                 API_KEY_PROTECTED_PATHS="/api/datasources/refresh"))
+
+    new_settings = Settings(
+        API_KEY="test-secret-key-12345",
+        CORS_ORIGINS="*",
+        API_KEY_PROTECTED_PATHS="/api/datasources/refresh",
+    )
+    monkeypatch.setattr("app.core.config.settings", new_settings)
+    # Also patch the local reference in the auth middleware
+    monkeypatch.setattr("app.middleware.auth.settings", new_settings)
 
     from sqlalchemy.orm import sessionmaker
+
     TestSession = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-    from app.models import database as db_mod
     from app.main import app as real_app
     from app.mock_data import init_db as init_mod
+    from app.models import database as db_mod
 
     original_engine = db_mod.engine
     original_session = db_mod.SessionLocal
@@ -35,6 +41,7 @@ def client_with_auth(monkeypatch, engine):
 
     real_app.dependency_overrides[db_mod.get_db] = _override
     from fastapi.testclient import TestClient
+
     with TestClient(real_app) as c:
         yield c
     real_app.dependency_overrides.clear()

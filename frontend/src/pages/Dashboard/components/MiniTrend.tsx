@@ -11,14 +11,14 @@ interface MiniTrendProps {
 }
 
 const MiniTrend: React.FC<MiniTrendProps> = ({ data }) => {
-  const option: echarts.EChartsOption = {
+  const option = {
     tooltip: {
       trigger: 'axis',
       backgroundColor: '#fff',
       borderColor: '#e8e8e8',
       borderWidth: 1,
       textStyle: { color: '#0b0b0b', fontSize: 13 },
-      formatter(params: echarts.DefaultLabelFormatterCallbackParams[]) {
+      formatter(params: { name?: string; value?: number | string }[]) {
         const p = params[0];
         const val = typeof p.value === 'number' ? p.value : Number(p.value);
         return `<div style="font-size:12px;color:#898781;margin-bottom:4px">${p.name}</div>

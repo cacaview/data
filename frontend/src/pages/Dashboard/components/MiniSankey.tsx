@@ -23,14 +23,14 @@ const MiniSankey: React.FC<MiniSankeyProps> = ({ nodes, links }) => {
     }
   }
 
-  const option: echarts.EChartsOption = {
+  const option = {
     tooltip: {
       trigger: 'item',
       backgroundColor: '#fff',
       borderColor: '#e8e8e8',
       borderWidth: 1,
       textStyle: { color: '#0b0b0b', fontSize: 13 },
-      formatter(params: echarts.DefaultLabelFormatterCallbackParams) {
+      formatter(params: { data?: { source?: string; target?: string; value?: number } }) {
         const d = params.data as { source: string; target: string; value: number } | undefined;
         if (d && d.source && d.target) {
           return `<div style="font-size:12px;color:#898781;margin-bottom:4px">${d.source} → ${d.target}</div>

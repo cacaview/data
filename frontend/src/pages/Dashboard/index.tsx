@@ -113,25 +113,25 @@ const Dashboard: React.FC = () => {
         if (cancelled) return;
 
         // Summary KPIs
-        if (summaryRes.status === 'fulfilled' && summaryRes.value.data) {
-          setKpi(summaryRes.value.data);
+        if (summaryRes.status === 'fulfilled' && summaryRes.value) {
+          setKpi(summaryRes.value as unknown as typeof FALLBACK_KPI);
         }
 
         // Trade map
-        if (mapRes.status === 'fulfilled' && mapRes.value.data) {
-          const md = mapRes.value.data;
+        if (mapRes.status === 'fulfilled' && mapRes.value) {
+          const md = mapRes.value as unknown as { points?: TradeMapPoint[]; arcs?: TradeMapArc[] };
           if (md.points) setMapPoints(md.points);
           if (md.arcs) setMapArcs(md.arcs);
         }
 
         // Sankey
-        if (sankeyRes.status === 'fulfilled' && sankeyRes.value.data) {
-          setSankey(sankeyRes.value.data);
+        if (sankeyRes.status === 'fulfilled' && sankeyRes.value) {
+          setSankey(sankeyRes.value as unknown as typeof FALLBACK_SANKEY);
         }
 
         // Trend
-        if (trendRes.status === 'fulfilled' && trendRes.value.data) {
-          setTrend(trendRes.value.data);
+        if (trendRes.status === 'fulfilled' && trendRes.value) {
+          setTrend(trendRes.value as unknown as typeof FALLBACK_TREND);
         }
       } catch (err) {
         if (!cancelled) {

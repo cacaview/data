@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Card, Select, Space, Spin, Tag, Timeline, Empty, Row, Col, Statistic } from 'antd';
+import { Card, Select, Space, Spin, Tag, Timeline, Empty } from 'antd';
 import {
   WarningOutlined,
   AlertOutlined,
@@ -30,15 +30,15 @@ const CLUSTER_COLORS = ['#1677ff', '#36cfc9', '#ffc53d', '#ff7a45', '#9254de', '
 // ─────────────── Section 1: LSTM Prediction ───────────────
 const PredictionChart: React.FC = () => {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [country, setCountry] = useState('vietnam');
-  const [product, setProduct] = useState('electronics');
+  const [_product, setProduct] = useState('electronics');
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getPrediction({ country, product });
-      setData(res.data);
+      const res = await getPrediction({ country });
+      setData(res as unknown as Record<string, unknown>);
     } catch {
       const months = Array.from({ length: 24 }, (_, i) => {
         const d = new Date(2024, i);
@@ -52,7 +52,7 @@ const PredictionChart: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [country, product]);
+  }, [country]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -114,7 +114,7 @@ const PredictionChart: React.FC = () => {
         <span style={{ fontWeight: 500 }}>国家：</span>
         <Select value={country} onChange={setCountry} options={COUNTRY_OPTIONS} style={{ width: 140 }} />
         <span style={{ fontWeight: 500 }}>商品：</span>
-        <Select value={product} onChange={setProduct} options={PRODUCT_OPTIONS} style={{ width: 140 }} />
+        <Select value={_product} onChange={setProduct} options={PRODUCT_OPTIONS} style={{ width: 140 }} />
         {data.mape != null && (
           <Tag color="blue" style={{ marginLeft: 16, fontSize: 14 }}>
             MAPE: {data.mape}%
@@ -129,12 +129,12 @@ const PredictionChart: React.FC = () => {
 // ─────────────── Section 2: Clustering Analysis ───────────────
 const ClusterChart: React.FC = () => {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     getClustering()
-      .then((res) => setData(res.data))
+      .then((res) => setData(res as unknown as Record<string, unknown>))
       .catch(() => {
         const clusters = ['高增长高价值', '高增长低价值', '低增长高价值', '低增长低价值', '新兴潜力'];
         const products = [
@@ -228,7 +228,7 @@ const RiskAlerts: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     getRiskAlerts()
-      .then((res) => setAlerts(res.data?.alerts || res.data || []))
+      .then((res) => setAlerts(Array.isArray(res) ? res : (res as unknown as Record<string, unknown>).alerts as unknown[] || []))
       .catch(() => {
         setAlerts([
           { id: 1, level: 'high', country: '越南', date: '2026-06-28', description: '越南对华钢铁反倾销税率上调至25.3%', suggestion: '建议钢铁出口企业关注越南市场，提前规划出口策略' },

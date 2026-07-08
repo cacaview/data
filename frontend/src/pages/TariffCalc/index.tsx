@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Card, Form, Input, Select, Button, Row, Col, Statistic, Space, Divider, Spin, Tag, AutoComplete, Descriptions,
+  Card, Form, Input, Select, Button, Row, Col, Statistic, Divider, Tag, AutoComplete, Descriptions,
 } from 'antd';
 import { CalculatorOutlined, CheckCircleOutlined, DollarOutlined } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
@@ -49,7 +49,7 @@ const TariffCalc: React.FC = () => {
   useEffect(() => {
     getCommonCodes()
       .then((res) => {
-        const items = (res.data?.codes || res.data || []).map((c: any) => ({
+        const items = ((res as unknown as { codes?: unknown[] }).codes || (Array.isArray(res) ? res : [])).map((c: any) => ({
           value: typeof c === 'string' ? c : c.code,
           label: typeof c === 'string' ? c : `${c.code} - ${c.name}`,
         }));
@@ -78,7 +78,7 @@ const TariffCalc: React.FC = () => {
         target_country: values.target_country,
         value_usd: Number(values.value_usd),
       });
-      setResult(res.data);
+      setResult(res as unknown as TariffResult);
     } catch {
       const val = Number(values.value_usd);
       setResult({

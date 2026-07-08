@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Tabs, Progress, Row, Col, Tag, Spin, Empty, Typography, Space, Badge, Statistic } from 'antd';
+import { Card, Tabs, Progress, Row, Col, Tag, Spin, Empty, Typography } from 'antd';
 import {
   DatabaseOutlined, CheckCircleOutlined, ClockCircleOutlined,
   SafetyCertificateOutlined, ApiOutlined,
@@ -10,18 +10,16 @@ import { getLineage, getQuality, getCatalog } from '../../services/api';
 const { Text, Paragraph } = Typography;
 
 const QUALITY_COLOR = '#1677ff';
-const QUALITY_SUCCESS = '#52c41a';
-const QUALITY_WARN = '#faad14';
 
 // ─────────────── Tab 1: Data Lineage DAG ───────────────
 const LineageTab: React.FC = () => {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     getLineage()
-      .then((res) => setData(res.data))
+      .then((res) => setData(res))
       .catch(() => {
         const layers = [
           { name: '源数据层', x: 80, nodes: ['海关总署数据', 'UN Comtrade', '东盟秘书处', '企业报关系统'] },
@@ -158,7 +156,7 @@ const QualityTab: React.FC = () => {
     setLoading(true);
     getQuality()
       .then((res) => {
-        const d = res.data;
+        const d = res as unknown as { dimensions: QualityDim[]; overall: number };
         setDims(d.dimensions || []);
         setOverall(d.overall || 0);
       })
@@ -247,7 +245,10 @@ const CatalogTab: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     getCatalog()
-      .then((res) => setCatalog(res.data?.sources || res.data || []))
+      .then((res) => {
+        const d = res as unknown as { sources?: CatalogItem[] };
+        setCatalog(d.sources || (Array.isArray(res) ? res as CatalogItem[] : []));
+      })
       .catch(() => {
         setCatalog([
           { name: '中国海关总署', url: 'http://www.customs.gov.cn', description: '中国进出口贸易统计数据，含HS编码商品明细', update_freq: '每月', record_count: 2580000, quality_score: 97.2 },

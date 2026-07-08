@@ -1,7 +1,7 @@
 // Typed API client for ACTAP backend.
 // All methods return Promises of typed responses; no `any` in this file.
 
-import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import type {
   OverviewSummary,
   TradeMapData,

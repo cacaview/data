@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Select, Table, Tag, Statistic, Spin, Typography, Space, Progress } from 'antd';
+import { Card, Row, Col, Select, Table, Tag, Statistic, Spin, Typography, Space } from 'antd';
 import {
   ThunderboltOutlined,
   SafetyOutlined,
@@ -9,7 +9,7 @@ import {
 import ReactECharts from 'echarts-for-react';
 import { getBurstRadar, getRiskDashboard, getUpstreamness, getTariffSavings } from '../../services/api';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
 
 const COUNTRIES = [
@@ -37,15 +37,15 @@ const Analytics: React.FC = () => {
     setLoading(true);
     try {
       const [burst, risk, upstream, savings] = await Promise.all([
-        getBurstRadar(c),
+        getBurstRadar({ partner: c }),
         getRiskDashboard(c),
         getUpstreamness(2023),
         getTariffSavings(c),
       ]);
-      setBurstData(burst.data);
-      setRiskData(risk.data);
-      setUpstreamData(upstream.data);
-      setSavingsData(savings.data);
+      setBurstData(burst);
+      setRiskData(risk);
+      setUpstreamData(upstream);
+      setSavingsData(savings);
     } catch (e) {
       console.error('Analytics fetch error:', e);
     } finally {

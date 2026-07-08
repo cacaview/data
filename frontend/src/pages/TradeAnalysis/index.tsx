@@ -23,14 +23,14 @@ const CHART_PALETTE = [
 // ─────────────── Tab 1: Trend Analysis ───────────────
 const TrendTab: React.FC = () => {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [yearRange, setYearRange] = useState<[string, string]>(['2018', '2024']);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getTradeTrend({ start_year: yearRange[0], end_year: yearRange[1] });
-      setData(res.data);
+      const res = await getTradeTrend({ start_year: Number(yearRange[0]), end_year: Number(yearRange[1]) });
+      setData(res as unknown as Record<string, unknown>);
     } catch {
       // fallback mock
       const years = Array.from({ length: 7 }, (_, i) => String(2018 + i));
@@ -88,12 +88,12 @@ const TrendTab: React.FC = () => {
 // ─────────────── Tab 2: Country Compare ───────────────
 const CompareTab: React.FC = () => {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     getCountryCompare()
-      .then((res) => setData(res.data))
+      .then((res) => setData(res as unknown as Record<string, unknown>))
       .catch(() => {
         const indicators = [
           { name: '贸易规模', max: 100 },
@@ -150,12 +150,12 @@ const CompareTab: React.FC = () => {
 // ─────────────── Tab 3: Ranking Analysis ───────────────
 const RankingTab: React.FC = () => {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     getTradeRanking()
-      .then((res) => setData(res.data))
+      .then((res) => setData(res as unknown as Record<string, unknown>))
       .catch(() => {
         setData({
           country_ranking: ASEAN_COUNTRIES.map((c, i) => ({ name: c, value: Math.round(500 - i * 40 + Math.random() * 30) })),
@@ -239,14 +239,14 @@ const RankingTab: React.FC = () => {
 // ─────────────── Tab 4: Sankey Flow ───────────────
 const SankeyTab: React.FC = () => {
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [year, setYear] = useState<number>(2024);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getTradeSankey(year);
-      setData(res.data);
+      setData(res as unknown as Record<string, unknown>);
     } catch {
       const countries = ['越南', '泰国', '印度尼西亚', '马来西亚', '菲律宾'];
       const sections = ['机电产品', '矿产品', '农产品', '化工产品', '纺织品'];
