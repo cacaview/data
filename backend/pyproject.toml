@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "actap-backend"
+version = "1.0.0"
+description = "ACTAP - ASEAN Cross-Border Trade AI Analytics Platform (backend)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "ACTAP Team" },
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["data*", "tests*", "mock_data*"]
+
+[tool.ruff]
+# Line length matches the most common Python projects.
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    "data",
+    "mock_data",
+    "build",
+    "dist",
+    ".venv",
+    "venv",
+]
+
+[tool.ruff.lint]
+# Rule sets: pycodestyle, pyflakes, isort, pyupgrade, bugbear, comprehensions
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # function call in default argument (FastAPI Depends pattern)
+    "B904",  # raise from in except - relax for now
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can be more relaxed
+"tests/**/*.py" = ["B011"]
+# __init__.py files can have unused imports
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+markers = [
+    "unit: unit tests (default)",
+    "integration: integration tests (require external services)",
+    "slow: slow-running tests",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:botocore.*",
+    "ignore::DeprecationWarning:openpyxl.*",
+]

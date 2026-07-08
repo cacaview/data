@@ -11,6 +11,11 @@ class KPISummary(BaseModel):
     product_categories: int
     top_partner: str
     top_product: str
+    # Frontend-aligned fields (kept in sync with the singular ones above):
+    top_partners: list[dict] = []
+    monthly_trend: list[dict] = []
+    top_growth_products: list[dict] = []
+    rcep_utilization: float = 0.0
 
 
 class TradeMapPoint(BaseModel):
@@ -82,6 +87,7 @@ class PredictionPoint(BaseModel):
 
 
 class PredictionResult(BaseModel):
+    model_config = {"protected_namespaces": ()}  # allow model_ prefix
     model_name: str
     mape: float
     data: list[PredictionPoint]
@@ -114,6 +120,7 @@ class TariffRequest(BaseModel):
 
 
 class TariffResult(BaseModel):
+    # Backend-native fields
     hs_code: str
     product_name: str
     origin_country: str
@@ -130,6 +137,12 @@ class TariffResult(BaseModel):
     savings_pct: float
     rule_of_origin: str
     cumulation_rule: str
+    # Frontend-aligned aliases (kept in sync with the backend-native fields)
+    declared_value_usd: Optional[float] = None
+    applicable_rate: Optional[float] = None
+    applicable_basis: Optional[str] = None
+    duty_usd: Optional[float] = None
+    savings_vs_mfn_usd: Optional[float] = None
 
 
 # ── Chat ──
@@ -139,8 +152,16 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+    # Frontend-aligned alias — page code reads `data.answer || data.content || data.message`.
+    answer: Optional[str] = None
     chart_type: Optional[str] = None
     chart_data: Optional[dict] = None
+
+    def model_post_init(self, __context):
+        # Auto-mirror `reply` into `answer` when not explicitly set,
+        # so frontend pages that read `data.answer` keep working.
+        if self.answer is None:
+            self.answer = self.reply
 
 
 # ── Data Assets ──

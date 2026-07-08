@@ -1,9 +1,42 @@
-node_modules
-.venv
+# --- Python ---
 __pycache__
 *.pyc
-*.db
-.env
+*.pyo
+*.pyd
+.Python
+.venv
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# --- Node / frontend ---
+node_modules
 dist
 .vite
+*.tsbuildinfo
+
+# --- Logs ---
 *.log
+logs/
+
+# --- Local data & secrets ---
+.env
+.env.local
+.env.*.local
+.env.dev
+.env.staging
+.env.prod
+*.db
+*.sqlite
+/data/
+!/data/.gitkeep
+
+# --- IDE / OS ---
+.DS_Store
+.idea/
+.vscode/
+*.swp

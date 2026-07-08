@@ -1,30 +1,59 @@
-version: '3.8'
+# =============================================================================
+# ACTAP Development Compose
+# =============================================================================
+# Local dev: `docker compose --env-file .env.dev up`
+# - Generous rate limits
+# - Wildcard CORS (browser dev tools)
+# - No API key required
+# - Single worker
+# - Source code volume-mounted for live reload (if desired)
 
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: actap-backend
+    container_name: actap-backend-dev
+    image: actap-backend:dev
     ports:
       - "8001:8001"
+    env_file:
+      - .env.dev
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-your-key-here}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.deepseek.com}
-      - MODEL_NAME=${MODEL_NAME:-deepseek-chat}
+      # Allow override from shell, but defaults from .env.dev
+      - DATA_DIR=/app/data
     volumes:
-      - ./backend/data:/app/data
+      - actap-data-dev:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8001/api/health/ready', timeout=4); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
+    user: "1001:1001"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: actap-frontend
+    container_name: actap-frontend-dev
+    image: actap-frontend:dev
     ports:
-      - "3000:3000"
+      - "3000:8080"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       - VITE_API_BASE=/api
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
+
+volumes:
+  actap-data-dev:
+    driver: local

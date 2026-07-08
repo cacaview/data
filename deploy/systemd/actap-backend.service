@@ -1,0 +1,63 @@
+# ACTAP backend systemd unit
+# Copy to /etc/systemd/system/actap-backend.service
+# Then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable actap-backend
+#   sudo systemctl start actap-backend
+#   sudo systemctl status actap-backend
+
+[Unit]
+Description=ACTAP Backend (FastAPI)
+Documentation=https://github.com/your-org/actap
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=actap
+Group=actap
+WorkingDirectory=/opt/actap
+EnvironmentFile=/etc/actap/backend.env
+ExecStartPre=/opt/actap/venv/bin/python -c "from app.core.config import settings, validate_production_config; validate_production_config()"
+ExecStart=/opt/actap/venv/bin/uvicorn app.main:app \
+    --host ${HOST:-0.0.0.0} \
+    --port ${PORT:-8001} \
+    --workers ${WORKERS:-4} \
+    --proxy-headers \
+    --forwarded-allow-ips="*"
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=20
+Restart=always
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=5
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+ReadWritePaths=/var/lib/actap
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+MemoryMax=1G
+CPUQuota=200%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=actap-backend
+
+[Install]
+WantedBy=multi-user.target

@@ -1,7 +1,11 @@
 """SQLAlchemy ORM models for trade data."""
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, Float, String, DateTime
-from datetime import datetime
 from .database import Base
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class TradeRecord(Base):
@@ -20,7 +24,7 @@ class TradeRecord(Base):
     unit = Column(String(20))
     trade_flow = Column(String(10), default="export")
     source = Column(String(50), default="mock", index=True)  # Data source: mock, UN Comtrade, IMF, etc.
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 class Country(Base):
@@ -79,4 +83,4 @@ class DataSource(Base):
     update_frequency = Column(String(50))  # daily, monthly, annual
     requires_key = Column(Integer, default=0)
     is_free = Column(Integer, default=1)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)

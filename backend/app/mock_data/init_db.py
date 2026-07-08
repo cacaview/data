@@ -13,7 +13,7 @@ Startup flow:
 import os
 import sys
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -228,7 +228,7 @@ def init_database():
         for src in db.query(DataSource).all():
             count = db.query(TradeRecord).filter(TradeRecord.source == src.name).count()
             src.record_count = count
-            src.last_sync = datetime.utcnow()
+            src.last_sync = datetime.now(timezone.utc)
             src.status = "active" if count > 0 else "inactive"
         db.commit()
 

@@ -7,12 +7,22 @@ import json
 import sqlite3
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
-CACHE_DB_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "api_cache.db"))
+# Resolve cache path from DATA_DIR env var (falls back to legacy location)
+try:
+    from app.core.config import settings as _settings
+    _data_dir = _settings.DATA_DIR
+except Exception:  # pragma: no cover
+    _data_dir = os.getenv("DATA_DIR", "./data")
+
+# Always put api_cache.db inside DATA_DIR
+CACHE_DB_PATH = os.path.normpath(
+    os.path.join(_data_dir, "api_cache.db")
+)
 DEFAULT_TTL_HOURS = 24  # Cache entries valid for 24 hours by default
 
 
@@ -60,7 +70,7 @@ def get_cached(cache_key: str) -> Optional[dict]:
             return None
 
         expires_at = datetime.fromisoformat(row[1])
-        if datetime.utcnow() > expires_at:
+        if datetime.now(timezone.utc) > expires_at:
             # Expired — delete and return None
             conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (cache_key,))
             conn.commit()
@@ -85,7 +95,7 @@ def set_cached(cache_key: str, source: str, data: Any, ttl_hours: float = DEFAUL
     """
     conn = _get_conn()
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expires = now + timedelta(hours=ttl_hours)
         conn.execute(
             """INSERT OR REPLACE INTO api_cache

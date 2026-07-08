@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-push:
+    name: Build + push images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version
+        id: meta
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "SHORT_VERSION=${VERSION#v}" >> $GITHUB_OUTPUT
+
+      - name: Build + push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/actap-backend:${{ steps.meta.outputs.VERSION }}
+            ghcr.io/${{ github.repository_owner }}/actap-backend:${{ steps.meta.outputs.SHORT_VERSION }}
+            ghcr.io/${{ github.repository_owner }}/actap-backend:latest
+          labels: |
+            org.opencontainers.image.title=actap-backend
+            org.opencontainers.image.version=${{ steps.meta.outputs.VERSION }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build + push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/actap-frontend:${{ steps.meta.outputs.VERSION }}
+            ghcr.io/${{ github.repository_owner }}/actap-frontend:${{ steps.meta.outputs.SHORT_VERSION }}
+            ghcr.io/${{ github.repository_owner }}/actap-frontend:latest
+          labels: |
+            org.opencontainers.image.title=actap-frontend
+            org.opencontainers.image.version=${{ steps.meta.outputs.VERSION }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate changelog excerpt
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## Release ${{ steps.meta.outputs.VERSION }}
+          Images published to GHCR:
+          - \`ghcr.io/${{ github.repository_owner }}/actap-backend:${{ steps.meta.outputs.VERSION }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/actap-frontend:${{ steps.meta.outputs.VERSION }}\`
+          EOF
+
+  create-release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          FROM_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          if [[ -z "$FROM_TAG" ]]; then
+            FROM_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "FROM=$FROM_TAG" >> $GITHUB_OUTPUT
+          echo "RANGE=$FROM_TAG..HEAD" >> $GITHUB_OUTPUT
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Changes
+            See the auto-generated notes below.
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') }}

@@ -1,0 +1,103 @@
+# =============================================================================
+# ACTAP Production Compose
+# =============================================================================
+# Production: `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d`
+#
+# Differences from dev:
+# - Reads from .env.prod (CORS restricted, API key required)
+# - 4 workers for concurrency
+# - Hard memory + CPU limits
+# - Read-only root filesystem where possible
+# - Logging to JSON for centralized log aggregation
+# - Restart policy: always (vs unless-stopped)
+# - No host port mapping for backend (use reverse proxy in front)
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: actap-backend:${APP_VERSION}
+    container_name: actap-backend-prod
+    env_file:
+      - .env.prod
+    environment:
+      - DATA_DIR=/var/lib/actap/data
+    expose:
+      - "8001"
+    volumes:
+      - actap-data-prod:/var/lib/actap/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8001/api/health/ready', timeout=4); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: always
+    user: "1001:1001"
+    read_only: false  # SQLite needs write; volume-mounted
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        tag: "actap-backend"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: actap-frontend:${APP_VERSION}
+    container_name: actap-frontend-prod
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - NET_BIND_SERVICE
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        tag: "actap-frontend"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+volumes:
+  actap-data-prod:
+    driver: local

@@ -91,6 +91,12 @@ def calculate_tariff(req: TariffRequest, db: Session = Depends(get_db)):
         savings_pct=round(savings_pct, 2),
         rule_of_origin=rule_of_origin,
         cumulation_rule=cumulation_rule,
+        # Frontend aliases
+        declared_value_usd=req.value_usd,
+        applicable_rate=round(best_rate, 2),
+        applicable_basis=best_scheme.lower(),
+        duty_usd=round(duty_best, 2),
+        savings_vs_mfn_usd=round(savings, 2),
     )
 
 
@@ -117,6 +123,6 @@ def get_common_codes(db: Session = Depends(get_db)):
     name_map = {p.hs_code: (p.hs_name_cn or p.hs_name_en or p.hs_code) for p in products}
 
     return [
-        {"hs_code": code, "name": name_map.get(code, code)}
+        {"hs_code": code, "code": code, "name": name_map.get(code, code)}
         for code in hs_codes
     ]

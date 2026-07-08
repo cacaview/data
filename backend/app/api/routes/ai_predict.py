@@ -9,6 +9,12 @@ from typing import Optional
 from app.models.database import get_db
 from app.models.schemas_db import TradeRecord, Country, Product
 from app.models.schemas import PredictionResult, PredictionPoint, ClusterItem, RiskAlert
+from app.core.constants import (
+    MOM_CHANGE_HIGH_THRESHOLD,
+    MOM_CHANGE_MEDIUM_THRESHOLD,
+    YOY_DROP_HIGH_THRESHOLD,
+    YOY_DROP_MEDIUM_THRESHOLD,
+)
 
 router = APIRouter()
 
@@ -262,7 +268,7 @@ def get_risk_alerts(db: Session = Depends(get_db)):
         change_pct = (val - prev_val) / prev_val * 100
         name = country_names.get(code, code)
 
-        if change_pct < -20:
+        if change_pct < YOY_DROP_HIGH_THRESHOLD:
             alerts.append(
                 RiskAlert(
                     date=f"{latest_year}-01",
@@ -273,7 +279,7 @@ def get_risk_alerts(db: Session = Depends(get_db)):
                     metric_value=round(change_pct, 2),
                 )
             )
-        elif change_pct < -10:
+        elif change_pct < YOY_DROP_MEDIUM_THRESHOLD:
             alerts.append(
                 RiskAlert(
                     date=f"{latest_year}-01",
@@ -305,8 +311,8 @@ def get_risk_alerts(db: Session = Depends(get_db)):
             if values[i - 1] == 0:
                 continue
             mom_change = (values[i] - values[i - 1]) / values[i - 1] * 100
-            if abs(mom_change) > 30:
-                level = "high" if abs(mom_change) > 50 else "medium"
+            if abs(mom_change) > MOM_CHANGE_MEDIUM_THRESHOLD:
+                level = "high" if abs(mom_change) > MOM_CHANGE_HIGH_THRESHOLD else "medium"
                 alerts.append(
                     RiskAlert(
                         date=f"{monthly[i][0]}-{monthly[i][1]:02d}",

@@ -211,5 +211,9 @@ def ask_chat(req: ChatRequest, db: Session = Depends(get_db)):
 # ── GET /suggestions ────────────────────────────────────────────────────────
 @router.get("/suggestions")
 def get_suggestions():
-    """Return a list of suggested chat questions."""
-    return _SUGGESTED_QUESTIONS
+    """Return a list of suggested chat questions.
+
+    Wrapped in `{suggestions: [...]}` to align with the frontend type
+    declaration `ChatResponse.suggestions`.
+    """
+    return {"suggestions": _SUGGESTED_QUESTIONS}

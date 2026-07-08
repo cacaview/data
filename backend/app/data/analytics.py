@@ -102,16 +102,18 @@ def detect_burst_products(trade_data: list, threshold_pct: float = 200.0,
     # Sort by growth rate
     bursts.sort(key=lambda x: x["yoy_growth_pct"], reverse=True)
 
-    # Separate bursts from normal
-    burst_items = [b for b in bursts if b["is_burst"]]
+    # `bursts` array contains ALL products (with `is_burst` flag distinguishing
+    # true anomalies). `top_growing` is the non-burst subset for UI display.
+    burst_items = bursts[:50]
     top_growing = [b for b in bursts if not b["is_burst"]][:10]
+    true_burst_count = sum(1 for b in bursts if b["is_burst"])
 
     return {
-        "bursts": burst_items[:50],
+        "bursts": burst_items,
         "top_growing": top_growing,
         "total_products_analyzed": int(len(bursts)),
-        "burst_count": int(len(burst_items)),
-        "summary": f"分析{len(bursts)}个商品，发现{len(burst_items)}个爆发性增长商品",
+        "burst_count": int(true_burst_count),
+        "summary": f"分析{len(bursts)}个商品，发现{true_burst_count}个爆发性增长商品",
     }
 
 

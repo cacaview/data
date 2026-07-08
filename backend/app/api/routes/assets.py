@@ -42,8 +42,8 @@ _SOURCE_QUALITY_ESTIMATES = {
 def get_lineage(db: Session = Depends(get_db)):
     """Data pipeline DAG showing sources -> transforms -> storage -> outputs."""
     trade_count = db.query(func.count(TradeRecord.id)).scalar() or 0
-    country_count = db.query(func.count(Country.id)).scalar() or 0
-    product_count = db.query(func.count(Product.id)).scalar() or 0
+    country_count = db.query(func.count(Country.code)).scalar() or 0
+    product_count = db.query(func.count(Product.hs_code)).scalar() or 0
     tariff_count = db.query(func.count(TariffRule.id)).scalar() or 0
 
     nodes = [
@@ -233,8 +233,8 @@ def get_catalog(db: Session = Depends(get_db)):
 
     # Fallback: compute from actual data (original logic)
     trade_count = db.query(func.count(TradeRecord.id)).scalar() or 0
-    country_count = db.query(func.count(Country.id)).scalar() or 0
-    product_count = db.query(func.count(Product.id)).scalar() or 0
+    country_count = db.query(func.count(Country.code)).scalar() or 0
+    product_count = db.query(func.count(Product.hs_code)).scalar() or 0
     tariff_count = db.query(func.count(TariffRule.id)).scalar() or 0
 
     def _quality_score(model):
