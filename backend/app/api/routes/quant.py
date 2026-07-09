@@ -19,8 +19,9 @@ from app.models.schemas_db import TradeRecord
 router = APIRouter(prefix="/quant", tags=["Quantitative Analytics"])
 
 
-def _get_trade_data(db: Session, partner: str | None = None,
-                    hs_code: str | None = None) -> list[dict]:
+def _get_trade_data(
+    db: Session, partner: str | None = None, hs_code: str | None = None
+) -> list[dict]:
     """Extract trade records as list of dicts for analytics modules."""
     query = db.query(TradeRecord)
     if partner:
@@ -61,8 +62,9 @@ def get_forecast(
     if not trade_data:
         return {"model_name": model, "mape": 0, "rmse": 0, "data": [], "error": "No data"}
 
-    result = forecast_trade_series(trade_data, partner=partner or "ALL",
-                                   hs_code=hs_code or "ALL", horizon=horizon)
+    result = forecast_trade_series(
+        trade_data, partner=partner or "ALL", hs_code=hs_code or "ALL", horizon=horizon
+    )
     return result
 
 

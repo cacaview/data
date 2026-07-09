@@ -54,17 +54,19 @@ def get_risk_monitor(
         else:
             risk_level = "low"
 
-        results.append({
-            "country": c.code,
-            "country_name": c.name_cn,
-            "country_name_en": c.name_en,
-            "trade_value_usd": round(trade_val, 2),
-            "risk_score": avg_score,
-            "risk_level": risk_level,
-            "risk_factors": risk,
-            "latitude": c.latitude,
-            "longitude": c.longitude,
-        })
+        results.append(
+            {
+                "country": c.code,
+                "country_name": c.name_cn,
+                "country_name_en": c.name_en,
+                "trade_value_usd": round(trade_val, 2),
+                "risk_score": avg_score,
+                "risk_level": risk_level,
+                "risk_factors": risk,
+                "latitude": c.latitude,
+                "longitude": c.longitude,
+            }
+        )
 
     # Sort by risk score descending (most risky first)
     results.sort(key=lambda x: x["risk_score"], reverse=True)
@@ -115,8 +117,11 @@ def get_compliance(
     """
     # Mock sanctions list for demonstration purposes
     mock_sanctions_list = {
-        "global trade corp", "risky ventures ltd", "sanctioned entity llc",
-        "blacklisted co", "restricted trading inc",
+        "global trade corp",
+        "risky ventures ltd",
+        "sanctioned entity llc",
+        "blacklisted co",
+        "restricted trading inc",
     }
 
     entity_lower = entity_name.strip().lower()
@@ -216,21 +221,23 @@ def get_cost_optimizer(
 
         savings = mfn_duty - (trade_value * best_rate / 100)
 
-        comparisons.append({
-            "hs_code": rule.hs_code,
-            "partner": rule.partner_country,
-            "trade_value_usd": round(trade_value, 2),
-            "mfn_rate": mfn_rate,
-            "rcep_rate": rcep_rate,
-            "fta_rate": fta_rate,
-            "mfn_duty_usd": round(mfn_duty, 2),
-            "rcep_duty_usd": round(rcep_duty, 2),
-            "fta_duty_usd": round(fta_duty, 2) if fta_duty is not None else None,
-            "best_rate": best_rate,
-            "best_scheme": best_scheme,
-            "savings_vs_mfn_usd": round(savings, 2),
-            "rule_of_origin": rule.rule_of_origin or "",
-        })
+        comparisons.append(
+            {
+                "hs_code": rule.hs_code,
+                "partner": rule.partner_country,
+                "trade_value_usd": round(trade_value, 2),
+                "mfn_rate": mfn_rate,
+                "rcep_rate": rcep_rate,
+                "fta_rate": fta_rate,
+                "mfn_duty_usd": round(mfn_duty, 2),
+                "rcep_duty_usd": round(rcep_duty, 2),
+                "fta_duty_usd": round(fta_duty, 2) if fta_duty is not None else None,
+                "best_rate": best_rate,
+                "best_scheme": best_scheme,
+                "savings_vs_mfn_usd": round(savings, 2),
+                "rule_of_origin": rule.rule_of_origin or "",
+            }
+        )
 
     comparisons.sort(key=lambda x: x["savings_vs_mfn_usd"], reverse=True)
 
@@ -284,15 +291,17 @@ def get_supply_chain_map(
     for code, c in countries.items():
         if code == "CHN":
             continue
-        nodes.append({
-            "id": code,
-            "name": c.name_cn,
-            "name_en": c.name_en,
-            "latitude": c.latitude,
-            "longitude": c.longitude,
-            "role": "partner",
-            "gdp_billion_usd": c.gdp_billion_usd,
-        })
+        nodes.append(
+            {
+                "id": code,
+                "name": c.name_cn,
+                "name_en": c.name_en,
+                "latitude": c.latitude,
+                "longitude": c.longitude,
+                "role": "partner",
+                "gdp_billion_usd": c.gdp_billion_usd,
+            }
+        )
 
     # Build edges from China to each trade partner
     max_trade = max(trade_map.values()) if trade_map else 1
@@ -300,12 +309,14 @@ def get_supply_chain_map(
     for partner_code, trade_val in trade_map.items():
         if trade_val <= 0:
             continue
-        edges.append({
-            "source": "CHN",
-            "target": partner_code,
-            "trade_value_usd": round(trade_val, 2),
-            "thickness": round(max(0.5, trade_val / max_trade * 10), 2),
-        })
+        edges.append(
+            {
+                "source": "CHN",
+                "target": partner_code,
+                "trade_value_usd": round(trade_val, 2),
+                "thickness": round(max(0.5, trade_val / max_trade * 10), 2),
+            }
+        )
 
     edges.sort(key=lambda e: e["trade_value_usd"], reverse=True)
 

@@ -61,26 +61,26 @@ def get_macro_overview(
         trade_volume = trade_map.get(c.code, 0)
         prev_volume = prev_map.get(c.code, 0)
         growth = (
-            round((trade_volume - prev_volume) / prev_volume * 100, 2)
-            if prev_volume > 0
-            else 0.0
+            round((trade_volume - prev_volume) / prev_volume * 100, 2) if prev_volume > 0 else 0.0
         )
         gdp = c.gdp_billion_usd or 0
         pop = c.population_million or 0
         trade_to_gdp = round(trade_volume / (gdp * 1e9) * 100, 2) if gdp > 0 else 0.0
 
-        countries_data.append({
-            "country": c.code,
-            "country_name": c.name_cn,
-            "country_name_en": c.name_en,
-            "gdp_billion_usd": gdp,
-            "population_million": pop,
-            "gdp_per_capita_usd": round(gdp * 1e9 / (pop * 1e6), 2) if pop > 0 else 0,
-            "trade_volume_usd": round(trade_volume, 2),
-            "trade_to_gdp_pct": trade_to_gdp,
-            "trade_growth_pct": growth,
-            "rcep_member": bool(c.rcep_member),
-        })
+        countries_data.append(
+            {
+                "country": c.code,
+                "country_name": c.name_cn,
+                "country_name_en": c.name_en,
+                "gdp_billion_usd": gdp,
+                "population_million": pop,
+                "gdp_per_capita_usd": round(gdp * 1e9 / (pop * 1e6), 2) if pop > 0 else 0,
+                "trade_volume_usd": round(trade_volume, 2),
+                "trade_to_gdp_pct": trade_to_gdp,
+                "trade_growth_pct": growth,
+                "rcep_member": bool(c.rcep_member),
+            }
+        )
 
     countries_data.sort(key=lambda x: x["gdp_billion_usd"], reverse=True)
     return {
@@ -158,28 +158,26 @@ def get_trade_impact(
         trade_to_gdp = round(trade_val / (gdp * 1e9) * 100, 2) if gdp > 0 else 0.0
 
         prev_val = prev_map.get(code, 0)
-        growth = (
-            round((trade_val - prev_val) / prev_val * 100, 2)
-            if prev_val > 0
-            else 0.0
-        )
+        growth = round((trade_val - prev_val) / prev_val * 100, 2) if prev_val > 0 else 0.0
         market_share = round(trade_val / total_global_trade * 100, 2)
         # Employment proxy: ~1 job per $50k of trade value
         employment_proxy = round(trade_val / 50_000)
 
         top = top_products.get(code, {})
-        results.append({
-            "country": code,
-            "country_name": c.name_cn,
-            "gdp_billion_usd": gdp,
-            "trade_value_usd": round(trade_val, 2),
-            "trade_to_gdp_pct": trade_to_gdp,
-            "trade_growth_pct": growth,
-            "market_share_pct": market_share,
-            "employment_proxy": employment_proxy,
-            "trade_intensity_index": round(trade_val / (pop * 1e6), 2) if pop > 0 else 0,
-            "top_product_hs": top.get("hs_code", ""),
-        })
+        results.append(
+            {
+                "country": code,
+                "country_name": c.name_cn,
+                "gdp_billion_usd": gdp,
+                "trade_value_usd": round(trade_val, 2),
+                "trade_to_gdp_pct": trade_to_gdp,
+                "trade_growth_pct": growth,
+                "market_share_pct": market_share,
+                "employment_proxy": employment_proxy,
+                "trade_intensity_index": round(trade_val / (pop * 1e6), 2) if pop > 0 else 0,
+                "top_product_hs": top.get("hs_code", ""),
+            }
+        )
 
     results.sort(key=lambda x: x["trade_value_usd"], reverse=True)
     return {
@@ -206,19 +204,21 @@ def get_sustainability(
 
     for c in countries:
         mock = _get_mock_esg(c.code)
-        results.append({
-            "country": c.code,
-            "country_name": c.name_cn,
-            "country_name_en": c.name_en,
-            "carbon_intensity_kg_per_kusd": mock["carbon_intensity"],
-            "environmental_score": mock["env_score"],
-            "social_score": mock["social_score"],
-            "governance_score": mock["gov_score"],
-            "esg_rating": mock["rating"],
-            "renewable_energy_pct": mock["renewable_pct"],
-            "deforestation_risk": mock["deforestation_risk"],
-            "labor_rights_index": mock["labor_rights"],
-        })
+        results.append(
+            {
+                "country": c.code,
+                "country_name": c.name_cn,
+                "country_name_en": c.name_en,
+                "carbon_intensity_kg_per_kusd": mock["carbon_intensity"],
+                "environmental_score": mock["env_score"],
+                "social_score": mock["social_score"],
+                "governance_score": mock["gov_score"],
+                "esg_rating": mock["rating"],
+                "renewable_energy_pct": mock["renewable_pct"],
+                "deforestation_risk": mock["deforestation_risk"],
+                "labor_rights_index": mock["labor_rights"],
+            }
+        )
 
     results.sort(key=lambda x: x["environmental_score"], reverse=True)
     return {
@@ -239,16 +239,96 @@ def _get_mock_esg(country_code: str) -> dict:
 
     # Country-specific overrides for realistic baseline values
     overrides = {
-        "SGP": {"carbon_intensity": 35, "env_score": 78, "social_score": 82, "gov_score": 90, "renewable_pct": 12, "deforestation_risk": "low", "labor_rights": 75},
-        "MYS": {"carbon_intensity": 120, "env_score": 62, "social_score": 65, "gov_score": 68, "renewable_pct": 22, "deforestation_risk": "medium", "labor_rights": 60},
-        "THA": {"carbon_intensity": 110, "env_score": 58, "social_score": 60, "gov_score": 55, "renewable_pct": 18, "deforestation_risk": "medium", "labor_rights": 55},
-        "VNM": {"carbon_intensity": 150, "env_score": 52, "social_score": 58, "gov_score": 50, "renewable_pct": 28, "deforestation_risk": "medium", "labor_rights": 50},
-        "IDN": {"carbon_intensity": 160, "env_score": 48, "social_score": 55, "gov_score": 52, "renewable_pct": 25, "deforestation_risk": "high", "labor_rights": 48},
-        "PHL": {"carbon_intensity": 130, "env_score": 55, "social_score": 57, "gov_score": 53, "renewable_pct": 20, "deforestation_risk": "medium", "labor_rights": 52},
-        "MMR": {"carbon_intensity": 180, "env_score": 40, "social_score": 35, "gov_score": 28, "renewable_pct": 45, "deforestation_risk": "high", "labor_rights": 30},
-        "KHM": {"carbon_intensity": 170, "env_score": 42, "social_score": 40, "gov_score": 35, "renewable_pct": 55, "deforestation_risk": "high", "labor_rights": 35},
-        "LAO": {"carbon_intensity": 140, "env_score": 50, "social_score": 42, "gov_score": 38, "renewable_pct": 70, "deforestation_risk": "medium", "labor_rights": 38},
-        "BRN": {"carbon_intensity": 90, "env_score": 55, "social_score": 60, "gov_score": 72, "renewable_pct": 5, "deforestation_risk": "low", "labor_rights": 60},
+        "SGP": {
+            "carbon_intensity": 35,
+            "env_score": 78,
+            "social_score": 82,
+            "gov_score": 90,
+            "renewable_pct": 12,
+            "deforestation_risk": "low",
+            "labor_rights": 75,
+        },
+        "MYS": {
+            "carbon_intensity": 120,
+            "env_score": 62,
+            "social_score": 65,
+            "gov_score": 68,
+            "renewable_pct": 22,
+            "deforestation_risk": "medium",
+            "labor_rights": 60,
+        },
+        "THA": {
+            "carbon_intensity": 110,
+            "env_score": 58,
+            "social_score": 60,
+            "gov_score": 55,
+            "renewable_pct": 18,
+            "deforestation_risk": "medium",
+            "labor_rights": 55,
+        },
+        "VNM": {
+            "carbon_intensity": 150,
+            "env_score": 52,
+            "social_score": 58,
+            "gov_score": 50,
+            "renewable_pct": 28,
+            "deforestation_risk": "medium",
+            "labor_rights": 50,
+        },
+        "IDN": {
+            "carbon_intensity": 160,
+            "env_score": 48,
+            "social_score": 55,
+            "gov_score": 52,
+            "renewable_pct": 25,
+            "deforestation_risk": "high",
+            "labor_rights": 48,
+        },
+        "PHL": {
+            "carbon_intensity": 130,
+            "env_score": 55,
+            "social_score": 57,
+            "gov_score": 53,
+            "renewable_pct": 20,
+            "deforestation_risk": "medium",
+            "labor_rights": 52,
+        },
+        "MMR": {
+            "carbon_intensity": 180,
+            "env_score": 40,
+            "social_score": 35,
+            "gov_score": 28,
+            "renewable_pct": 45,
+            "deforestation_risk": "high",
+            "labor_rights": 30,
+        },
+        "KHM": {
+            "carbon_intensity": 170,
+            "env_score": 42,
+            "social_score": 40,
+            "gov_score": 35,
+            "renewable_pct": 55,
+            "deforestation_risk": "high",
+            "labor_rights": 35,
+        },
+        "LAO": {
+            "carbon_intensity": 140,
+            "env_score": 50,
+            "social_score": 42,
+            "gov_score": 38,
+            "renewable_pct": 70,
+            "deforestation_risk": "medium",
+            "labor_rights": 38,
+        },
+        "BRN": {
+            "carbon_intensity": 90,
+            "env_score": 55,
+            "social_score": 60,
+            "gov_score": 72,
+            "renewable_pct": 5,
+            "deforestation_risk": "low",
+            "labor_rights": 60,
+        },
     }
 
     if country_code in overrides:
@@ -379,17 +459,19 @@ def get_competitiveness(
         growth = round((cur - prev) / prev * 100, 2) if prev > 0 else 0.0
 
         rca_info = top_rca.get(code, {"hs_chapter": 0, "rca": 0})
-        results.append({
-            "country": code,
-            "country_name": c.name_cn,
-            "country_name_en": c.name_en,
-            "trade_value_usd": round(ct, 2),
-            "market_share_pct": market_share,
-            "growth_competitiveness_pct": growth,
-            "top_rca_chapter": rca_info["hs_chapter"],
-            "top_rca_value": rca_info["rca"],
-            "gdp_billion_usd": c.gdp_billion_usd,
-        })
+        results.append(
+            {
+                "country": code,
+                "country_name": c.name_cn,
+                "country_name_en": c.name_en,
+                "trade_value_usd": round(ct, 2),
+                "market_share_pct": market_share,
+                "growth_competitiveness_pct": growth,
+                "top_rca_chapter": rca_info["hs_chapter"],
+                "top_rca_value": rca_info["rca"],
+                "gdp_billion_usd": c.gdp_billion_usd,
+            }
+        )
 
     results.sort(key=lambda x: x["top_rca_value"], reverse=True)
     return {

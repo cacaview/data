@@ -66,9 +66,16 @@ def multi_partner_data(sample_trade_data):
 def constant_trade_data():
     """36 months of constant-valued trade data."""
     return [
-        {"year": y, "month": m, "trade_value_usd": 500_000.0,
-         "partner": "VNM", "hs_code": "8471", "trade_flow": "export"}
-        for y in range(2022, 2025) for m in range(1, 13)
+        {
+            "year": y,
+            "month": m,
+            "trade_value_usd": 500_000.0,
+            "partner": "VNM",
+            "hs_code": "8471",
+            "trade_flow": "export",
+        }
+        for y in range(2022, 2025)
+        for m in range(1, 13)
     ]
 
 
@@ -76,8 +83,14 @@ def constant_trade_data():
 def single_point_data():
     """Single trade data point."""
     return [
-        {"year": 2024, "month": 1, "trade_value_usd": 1_000_000,
-         "partner": "VNM", "hs_code": "8471", "trade_flow": "export"},
+        {
+            "year": 2024,
+            "month": 1,
+            "trade_value_usd": 1_000_000,
+            "partner": "VNM",
+            "hs_code": "8471",
+            "trade_flow": "export",
+        },
     ]
 
 
@@ -86,9 +99,14 @@ def short_trade_data():
     """5 months of trade data (short series)."""
     np.random.seed(42)
     return [
-        {"year": 2024, "month": m,
-         "trade_value_usd": 1_000_000 + np.random.randn() * 20_000,
-         "partner": "VNM", "hs_code": "8471", "trade_flow": "export"}
+        {
+            "year": 2024,
+            "month": m,
+            "trade_value_usd": 1_000_000 + np.random.randn() * 20_000,
+            "partner": "VNM",
+            "hs_code": "8471",
+            "trade_flow": "export",
+        }
         for m in range(1, 6)
     ]
 
@@ -267,7 +285,10 @@ class TestTimeSeriesModels:
     def test_forecast_trade_series_basic(self, sample_trade_data):
         """forecast_trade_series returns expected structure."""
         result = forecast_trade_series(
-            sample_trade_data, partner="VNM", hs_code="8471", horizon=6,
+            sample_trade_data,
+            partner="VNM",
+            hs_code="8471",
+            horizon=6,
         )
         assert "model_name" in result
         assert "mape" in result
