@@ -130,7 +130,7 @@ def _answer_export_products(db: Session) -> ChatResponse:
     if not rows:
         return ChatResponse(reply="暂无出口数据。")
 
-    lines = [f"{i+1}. **{r[0]}** -- {r[1] / 1e8:.2f} 亿美元" for i, r in enumerate(rows)]
+    lines = [f"{i + 1}. **{r[0]}** -- {r[1] / 1e8:.2f} 亿美元" for i, r in enumerate(rows)]
     return ChatResponse(
         reply=f"中国对东盟主要出口产品（{latest}年）：\n\n" + "\n".join(lines),
         chart_type="bar",
