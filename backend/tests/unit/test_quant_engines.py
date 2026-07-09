@@ -21,13 +21,11 @@ from app.data.signal_generator import generate_signals
 from app.data.ts_models import (
     auto_arima,
     change_point_detect,
-    ensemble_forecast,
     forecast_trade_series,
     holt_winters,
     stl_decompose,
 )
 from app.data.var_calculator import calculate_var
-
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 

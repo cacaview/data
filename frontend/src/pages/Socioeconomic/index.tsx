@@ -11,8 +11,6 @@ import { getSocioMacroOverview, getSocioTradeImpact, getSocioSustainability } fr
 
 const { Title } = Typography;
 
-const ASEAN_COUNTRIES = ['越南', '泰国', '马来西亚', '印尼', '菲律宾', '新加坡', '缅甸', '柬埔寨', '老挝', '文莱'];
-
 const Socioeconomic: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [macroData, setMacroData] = useState<any>(null);

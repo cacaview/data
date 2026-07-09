@@ -4,11 +4,9 @@ Tests the /api/quant/* endpoints using the FastAPI TestClient with an
 in-memory SQLite database seeded with sample trade records.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.models.schemas_db import TradeRecord
-
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 

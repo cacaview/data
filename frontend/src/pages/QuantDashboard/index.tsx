@@ -183,12 +183,6 @@ const QuantDashboard: React.FC = () => {
       history.length > 0 ? [history[history.length - 1].value] : [],
       forecast.map((f: any) => f.lower ?? (f.predicted ?? f.value ?? 0) * 0.9)
     );
-    // Mark area for confidence band
-    const confidenceArea = forecast.map((f: any, i: number) => ({
-      xAxis: history.length + i - 1,
-      itemStyle: { color: 'rgba(22, 119, 255, 0.08)' },
-    }));
-
     return {
       tooltip: { trigger: 'axis' },
       legend: { data: ['历史数据', '预测值', '上界', '下界'], top: 0 },
