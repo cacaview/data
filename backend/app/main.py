@@ -97,8 +97,11 @@ from app.api.routes import (  # noqa: E402
     assets,
     chat,
     datasources,
+    enterprise,
     health,
     overview,
+    quant,
+    socioeconomic,
     tariff,
     trade,
 )
@@ -112,3 +115,6 @@ app.include_router(chat.router, prefix="/api/chat", tags=["AI助手"])
 app.include_router(assets.router, prefix="/api/assets", tags=["数据资产"])
 app.include_router(datasources.router, prefix="/api/datasources", tags=["数据源管理"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["智能分析"])
+app.include_router(quant.router, prefix="/api", tags=["量化分析"])
+app.include_router(enterprise.router, prefix="/api/enterprise", tags=["企业风控中心"])
+app.include_router(socioeconomic.router, prefix="/api/socioeconomic", tags=["社会经济仪表盘"])

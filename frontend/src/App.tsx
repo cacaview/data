@@ -9,6 +9,10 @@ import TariffCalc from './pages/TariffCalc';
 import AIAssistant from './pages/AIAssistant';
 import DataAssets from './pages/DataAssets';
 import Analytics from './pages/Analytics';
+import FactorAnalysis from './pages/FactorAnalysis';
+import Enterprise from './pages/Enterprise';
+import Socioeconomic from './pages/Socioeconomic';
+import QuantDashboard from './pages/QuantDashboard';
 
 const App = () => (
   <ConfigProvider
@@ -31,6 +35,10 @@ const App = () => (
           <Route path="/chat" element={<AIAssistant />} />
           <Route path="/assets" element={<DataAssets />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/factors" element={<FactorAnalysis />} />
+          <Route path="/enterprise" element={<Enterprise />} />
+          <Route path="/socioeconomic" element={<Socioeconomic />} />
+          <Route path="/quant" element={<QuantDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>

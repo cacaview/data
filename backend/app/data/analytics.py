@@ -39,11 +39,9 @@ def detect_burst_products(trade_data: list, threshold_pct: float = 200.0,
         record_count=("id", "count") if "id" in df.columns else ("trade_value_usd", "count"),
     ).reset_index()
 
-    # Create date column for time series
-    monthly["date"] = pd.to_datetime(
-        monthly["year"].astype(str) + "-" + monthly["month"].astype(str).str.zfill(2) + "-01"
-    )
-    monthly = monthly.sort_values("date")
+    # Create sort key for chronological ordering
+    monthly["_sort_key"] = monthly["year"].astype(int) * 100 + monthly["month"].astype(int)
+    monthly = monthly.sort_values("_sort_key")
 
     bursts = []
     for hs_code, group in monthly.groupby("hs_code"):
@@ -51,7 +49,9 @@ def detect_burst_products(trade_data: list, threshold_pct: float = 200.0,
             continue
 
         values = group["total_value"].values
-        dates = group["date"].values
+        y0, m0 = int(group["year"].iloc[0]), int(group["month"].iloc[0])
+        y1, m1 = int(group["year"].iloc[-1]), int(group["month"].iloc[-1])
+        date_range_str = f"{y0}-{m0:02d} to {y1}-{m1:02d}"
 
         # Calculate YoY growth (compare last 3 months vs same period last year)
         if len(values) >= 12:
@@ -96,7 +96,7 @@ def detect_burst_products(trade_data: list, threshold_pct: float = 200.0,
             "trend": str(trend),
             "is_burst": bool(is_burst),
             "data_points": int(len(values)),
-            "date_range": f"{dates[0]} to {dates[-1]}",
+            "date_range": date_range_str,
         })
 
     # Sort by growth rate

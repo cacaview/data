@@ -9,6 +9,10 @@ import {
   MessageOutlined,
   DatabaseOutlined,
   ExperimentOutlined,
+  FundOutlined,
+  BankOutlined,
+  GlobalOutlined,
+  ApartmentOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -20,6 +24,10 @@ const menuItems = [
   { key: '/ai', icon: <RobotOutlined />, label: 'AI预测' },
   { key: '/tariff', icon: <CalculatorOutlined />, label: '关税计算' },
   { key: '/analytics', icon: <ExperimentOutlined />, label: '智能分析' },
+  { key: '/factors', icon: <ApartmentOutlined />, label: '因子分析' },
+  { key: '/quant', icon: <FundOutlined />, label: '量化分析' },
+  { key: '/enterprise', icon: <BankOutlined />, label: '企业风控' },
+  { key: '/socioeconomic', icon: <GlobalOutlined />, label: '社会经济' },
   { key: '/chat', icon: <MessageOutlined />, label: 'AI助手' },
   { key: '/assets', icon: <DatabaseOutlined />, label: '数据资产' },
 ];

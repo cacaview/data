@@ -140,4 +140,46 @@ export const getUpstreamness = (year?: number): Promise<Data<UpstreamnessResult[
 export const getTariffSavings = (partner?: string): Promise<Data<TariffSavingsResult>> =>
   api.get<TariffSavingsResult>('/analytics/tariff-savings', { params: { partner } }).then(r => r.data);
 
+// ── Quantitative Analytics ──
+export const getQuantForecast = (params: { partner?: string; model?: string; horizon?: number }) =>
+  api.get('/quant/forecast', { params }).then(r => r.data);
+
+export const getQuantCorrelation = (params?: { entities?: string }) =>
+  api.get('/quant/correlation', { params }).then(r => r.data);
+
+export const getQuantSignals = (params: { partner?: string }) =>
+  api.get('/quant/signals', { params }).then(r => r.data);
+
+export const getQuantFactors = (params?: { partner?: string }) =>
+  api.get('/quant/factors', { params }).then(r => r.data);
+
+export const getQuantVar = (params: { partner?: string; confidence?: number }) =>
+  api.get('/quant/var', { params }).then(r => r.data);
+
+export const getQuantPortfolio = () =>
+  api.get('/quant/portfolio').then(r => r.data);
+
+// ── Enterprise ──
+export const getEnterpriseRiskMonitor = () =>
+  api.get('/enterprise/risk-monitor').then(r => r.data);
+
+export const getEnterpriseCompliance = (entity?: string) =>
+  api.get('/enterprise/compliance', { params: { entity_name: entity } }).then(r => r.data);
+
+export const getEnterpriseCostOptimizer = (params?: { hs_code?: string; partner?: string }) =>
+  api.get('/enterprise/cost-optimizer', { params }).then(r => r.data);
+
+export const getSupplyChainMap = () =>
+  api.get('/enterprise/supply-chain-map').then(r => r.data);
+
+// ── Socioeconomic ──
+export const getSocioMacroOverview = () =>
+  api.get('/socioeconomic/macro-overview').then(r => r.data);
+
+export const getSocioTradeImpact = () =>
+  api.get('/socioeconomic/trade-impact').then(r => r.data);
+
+export const getSocioSustainability = () =>
+  api.get('/socioeconomic/sustainability').then(r => r.data);
+
 export default api;

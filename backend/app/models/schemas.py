@@ -199,3 +199,188 @@ class DataSourceMeta(BaseModel):
     last_updated: str
     fields: list[str]
     quality_score: float
+
+
+# ── Advanced Time Series Forecasting ──
+class ForecastPoint(BaseModel):
+    date: str
+    actual: float | None = None
+    predicted: float | None = None
+    lower: float | None = None
+    upper: float | None = None
+
+
+class ForecastResult(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    model_name: str
+    model_params: dict = {}
+    mape: float
+    rmse: float
+    aic: float | None = None
+    data: list[ForecastPoint]
+
+
+class DecompositionResult(BaseModel):
+    trend: list[float]
+    seasonal: list[float]
+    residual: list[float]
+    dates: list[str]
+    period: int
+    strength_of_trend: float
+
+
+# ── Correlation & Cointegration ──
+class CorrelationMatrix(BaseModel):
+    entities: list[str]
+    matrix: list[list[float]]
+    method: str = "pearson"
+
+
+class CointegrationResult(BaseModel):
+    series_a_name: str
+    series_b_name: str
+    cointegrated: bool
+    test_statistic: float
+    p_value: float
+    critical_values: dict = {}
+
+
+class ClusterResult(BaseModel):
+    id: int
+    members: list[str]
+    centroid: list[float]
+    label: str
+
+
+class ClusteringResult(BaseModel):
+    clusters: list[ClusterResult]
+    explained_variance: float
+    n_clusters: int
+
+
+# ── Multi-Factor Analysis ──
+class FactorContribution(BaseModel):
+    name: str
+    value: float
+    percentage: float
+    direction: str  # "positive" / "negative"
+
+
+class AttributionResult(BaseModel):
+    factors: list[FactorContribution]
+    total_change: float
+    unexplained: float
+    r_squared: float
+    period: str
+
+
+class SeasonalIndex(BaseModel):
+    month: int
+    index: float
+    label: str
+
+
+class FactorReport(BaseModel):
+    partner: str | None = None
+    seasonal_indices: list[SeasonalIndex]
+    elasticity: float | None = None
+    exchange_rate_impact: float = 0.0
+    description: str = ""
+
+
+# ── Trading Signals ──
+class SignalDetail(BaseModel):
+    value: float = 0.0
+    trend: str = "neutral"
+    strength: float = 0.0
+    zone: str = "neutral"
+    regime: str = "medium"
+    signal: str = "hold"
+    description: str = ""
+
+
+class SignalHistory(BaseModel):
+    month: str
+    composite_score: float
+    action: str
+
+
+class SignalReport(BaseModel):
+    composite_score: float
+    action: str  # BUY / HOLD / SELL
+    confidence: float
+    signals: dict[str, SignalDetail] = {}
+    history: list[SignalHistory] = []
+    description: str = ""
+
+
+# ── Portfolio Optimization ──
+class PortfolioWeight(BaseModel):
+    name: str
+    current_weight: float
+    optimal_weight: float
+    risk_contribution: float
+
+
+class EfficientFrontierPoint(BaseModel):
+    risk: float
+    return_rate: float
+    sharpe_ratio: float
+    weights: dict[str, float]
+
+
+class PortfolioResult(BaseModel):
+    hhi_current: float
+    hhi_optimal: float
+    weights: list[PortfolioWeight]
+    efficient_frontier: list[EfficientFrontierPoint]
+    optimal_sharpe: float
+    diversification_benefit: float
+
+
+# ── Value at Risk ──
+class VaRResult(BaseModel):
+    confidence_level: float
+    var_historical: float
+    var_parametric: float
+    cvar: float
+    max_drawdown: float
+    volatility: float
+    risk_contributions: list[dict] = []
+    stress_tests: list[dict] = []
+
+
+# ── Backtesting ──
+class ScenarioConfig(BaseModel):
+    name: str
+    description: str = ""
+    tariff_change_pct: float | None = None
+    fx_change_pct: float | None = None
+    demand_change_pct: float | None = None
+
+
+class BacktestResult(BaseModel):
+    scenario: ScenarioConfig
+    baseline_total: float
+    simulated_total: float
+    impact_pct: float
+    impact_usd: float
+    winners: list[dict] = []
+    losers: list[dict] = []
+    sensitivity: list[dict] = []
+
+
+# ── Enterprise Risk ──
+class SupplyChainRisk(BaseModel):
+    country: str
+    risk_score: float
+    risk_level: str  # high / medium / low
+    factors: dict = {}
+    recommendation: str = ""
+
+
+class ComplianceCheck(BaseModel):
+    entity: str
+    status: str  # clear / flagged / unknown
+    lists_checked: list[str] = []
+    details: str = ""
