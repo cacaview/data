@@ -36,16 +36,100 @@ const QuantDashboard: React.FC = () => {
   const fetchData = async (p: string) => {
     setLoading(true);
     try {
-      const [signals, varResult, portfolio, forecast] = await Promise.all([
+      // Use Promise.allSettled to handle individual API failures
+      const [signalsResult, varResult, portfolioResult, forecastResult] = await Promise.allSettled([
         getQuantSignals({ partner: p }),
         getQuantVar({ partner: p, confidence: 0.95 }),
         getQuantPortfolio(),
-        getQuantForecast({ partner: p, horizon: 12 }),
+        getQuantForecast({ partner: p, horizon: 6 }), // Use smaller horizon to avoid timeout
       ]);
-      setSignalData(signals);
-      setVarData(varResult);
-      setPortfolioData(portfolio);
-      setForecastData(forecast);
+
+      // Transform signals
+      if (signalsResult.status === 'fulfilled') {
+        const rawSignals = signalsResult.value as any;
+        if (rawSignals?.signals && typeof rawSignals.signals === 'object') {
+          const signalList = Object.entries(rawSignals.signals).map(([key, val]: [string, any]) => ({
+            name: key.charAt(0).toUpperCase() + key.slice(1),
+            signal: val.trend === 'up' ? 'BUY' : val.trend === 'down' ? 'SELL' : 'HOLD',
+            score: val.current_signal || val.strength || 0,
+            confidence: val.strength ? val.strength / 100 : 0.5,
+            reason: val.description || `${key} signal`,
+          }));
+          setSignalData({ signals: signalList });
+        } else {
+          setSignalData(signalsResult.value);
+        }
+      }
+
+      // Transform VaR
+      if (varResult.status === 'fulfilled') {
+        const rawVar = varResult.value as any;
+        if (rawVar?.var_historical != null) {
+          const transformedStress = (rawVar.stress_tests || []).map((st: any) => ({
+            scenario: st.name || st.scenario,
+            shock: st.shock_pct || st.shock || 0,
+            loss: Math.abs(st.impact_usd || st.loss || 0) / 1e8,
+            probability: st.probability || 0.1,
+          }));
+          setVarData({
+            var_pct: rawVar.var_historical * 100,
+            stress_tests: transformedStress,
+          });
+        } else {
+          setVarData(varResult.value);
+        }
+      }
+
+      // Transform portfolio
+      if (portfolioResult.status === 'fulfilled') {
+        const rawPortfolio = portfolioResult.value as any;
+        if (rawPortfolio?.efficient_frontier) {
+          const frontier = rawPortfolio.efficient_frontier.map((p: any) => ({
+            risk: (p.risk || 0) * 100,
+            return: (p.return_rate || 0) * 100,
+          }));
+          const optimal = rawPortfolio.optimal_sharpe ? {
+            risk: frontier.length > 0 ? frontier[Math.floor(frontier.length / 2)].risk : 0,
+            return: rawPortfolio.optimal_sharpe * 100,
+          } : null;
+          setPortfolioData({
+            portfolios: frontier,
+            efficient_frontier: frontier,
+            optimal,
+          });
+        } else {
+          setPortfolioData(portfolioResult.value);
+        }
+      }
+
+      // Transform forecast
+      if (forecastResult.status === 'fulfilled') {
+        const rawForecast = forecastResult.value as any;
+        if (Array.isArray(rawForecast?.data) && rawForecast.data.length > 0) {
+          const history = rawForecast.data
+            .filter((d: any) => d.actual != null)
+            .map((d: any) => ({
+              date: d.date,
+              value: d.actual / 1e8,
+            }));
+          const forecastPoints = rawForecast.data
+            .filter((d: any) => d.predicted != null)
+            .map((d: any) => ({
+              date: d.date,
+              predicted: d.predicted / 1e8,
+              lower: d.lower ? d.lower / 1e8 : undefined,
+              upper: d.upper ? d.upper / 1e8 : undefined,
+            }));
+          setForecastData({
+            history,
+            forecast: forecastPoints,
+            model: rawForecast.model_name,
+            mape: rawForecast.mape,
+          });
+        } else {
+          setForecastData(forecastResult.value);
+        }
+      }
     } catch (e) {
       console.error('Quant dashboard fetch error:', e);
     } finally {
@@ -168,19 +252,20 @@ const QuantDashboard: React.FC = () => {
   // Forecast chart with confidence bands
   const forecastOption = forecastData ? (() => {
     const history = forecastData.history || [];
-    const forecast = forecastData.forecast || [];
+    const forecast = forecastData.forecast || forecastData.data || [];
+    if (!history.length && !forecast.length) return {};
     const allDates = [...history.map((h: any) => h.date), ...forecast.map((f: any) => f.date)];
-    const historyValues = history.map((h: any) => h.value);
-    const forecastValues = new Array(history.length - 1).fill(null).concat(
-      history.length > 0 ? [history[history.length - 1].value] : [],
+    const historyValues = history.map((h: any) => h.value ?? h.actual ?? 0);
+    const forecastValues = new Array(Math.max(0, history.length - 1)).fill(null).concat(
+      history.length > 0 ? [history[history.length - 1].value ?? history[history.length - 1].actual ?? 0] : [],
       forecast.map((f: any) => f.predicted ?? f.value ?? 0)
     );
-    const upperBand = new Array(history.length - 1).fill(null).concat(
-      history.length > 0 ? [history[history.length - 1].value] : [],
+    const upperBand = new Array(Math.max(0, history.length - 1)).fill(null).concat(
+      history.length > 0 ? [history[history.length - 1].value ?? history[history.length - 1].actual ?? 0] : [],
       forecast.map((f: any) => f.upper ?? (f.predicted ?? f.value ?? 0) * 1.1)
     );
-    const lowerBand = new Array(history.length - 1).fill(null).concat(
-      history.length > 0 ? [history[history.length - 1].value] : [],
+    const lowerBand = new Array(Math.max(0, history.length - 1)).fill(null).concat(
+      history.length > 0 ? [history[history.length - 1].value ?? history[history.length - 1].actual ?? 0] : [],
       forecast.map((f: any) => f.lower ?? (f.predicted ?? f.value ?? 0) * 0.9)
     );
     return {

@@ -101,6 +101,22 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
+    // Country name mapping: Chinese → English (for TradeMap component)
+    const COUNTRY_NAME_MAP: Record<string, string> = {
+      '中国': 'China',
+      '越南': 'Vietnam',
+      '泰国': 'Thailand',
+      '马来西亚': 'Malaysia',
+      '印度尼西亚': 'Indonesia',
+      '印尼': 'Indonesia',
+      '新加坡': 'Singapore',
+      '菲律宾': 'Philippines',
+      '缅甸': 'Myanmar',
+      '柬埔寨': 'Cambodia',
+      '老挝': 'Laos',
+      '文莱': 'Brunei',
+    };
+
     async function fetchAll() {
       try {
         const [summaryRes, mapRes, sankeyRes, trendRes] = await Promise.allSettled([
@@ -112,16 +128,58 @@ const Dashboard: React.FC = () => {
 
         if (cancelled) return;
 
-        // Summary KPIs
+        // Summary KPIs - convert total_trade_value from dollars to 亿美元
         if (summaryRes.status === 'fulfilled' && summaryRes.value) {
-          setKpi(summaryRes.value as unknown as typeof FALLBACK_KPI);
+          const raw = summaryRes.value as any;
+          setKpi({
+            total_trade_value: Math.round((raw.total_trade_value || 0) / 1e8), // dollars → 亿美元
+            yoy_growth: raw.yoy_growth || 0,
+            partner_count: raw.partner_count || 10,
+            product_categories: raw.product_categories || 0,
+          });
         }
 
-        // Trade map
+        // Trade map - transform API field names to component expected names
         if (mapRes.status === 'fulfilled' && mapRes.value) {
-          const md = mapRes.value as unknown as { points?: TradeMapPoint[]; arcs?: TradeMapArc[] };
-          if (md.points) setMapPoints(md.points);
-          if (md.arcs) setMapArcs(md.arcs);
+          const md = mapRes.value as any;
+          if (md.points && Array.isArray(md.points)) {
+            const transformedPoints: TradeMapPoint[] = md.points.map((p: any) => {
+              const chineseName = p.country_name || p.country || '';
+              return {
+                country: COUNTRY_NAME_MAP[chineseName] || chineseName, // Convert Chinese → English
+                lat: p.latitude || p.lat || 0,
+                lng: p.longitude || p.lng || 0,
+                trade_value: Math.round((p.trade_value || 0) / 1e8), // dollars → 亿美元
+                growth_rate: p.growth_rate || 0,
+                top_products: p.top_products || [],
+              };
+            });
+            // Add China node if not present
+            const hasChina = transformedPoints.some(p => p.country === 'China');
+            if (!hasChina) {
+              transformedPoints.unshift({
+                country: 'China',
+                lat: 35.86,
+                lng: 104.19,
+                trade_value: Math.round((summaryRes.status === 'fulfilled' ? (summaryRes.value as any)?.total_trade_value || 0 : 0) / 1e8),
+                growth_rate: 0,
+                top_products: ['机电产品', '高新技术', '农产品'],
+              });
+            }
+            setMapPoints(transformedPoints);
+          }
+          if (md.arcs && Array.isArray(md.arcs)) {
+            const transformedArcs: TradeMapArc[] = md.arcs.map((a: any) => {
+              const sourceName = a.from_name || a.source || '中国';
+              const targetName = a.to_name || a.target || '';
+              return {
+                source: COUNTRY_NAME_MAP[sourceName] || sourceName, // Convert Chinese → English
+                target: COUNTRY_NAME_MAP[targetName] || targetName, // Convert Chinese → English
+                value: Math.round((a.trade_value || a.value || 0) / 1e8), // dollars → 亿美元
+              };
+            });
+            setMapArcs(transformedArcs);
+          }
         }
 
         // Sankey
@@ -129,9 +187,19 @@ const Dashboard: React.FC = () => {
           setSankey(sankeyRes.value as unknown as typeof FALLBACK_SANKEY);
         }
 
-        // Trend
+        // Trend - transform array to expected format
         if (trendRes.status === 'fulfilled' && trendRes.value) {
-          setTrend(trendRes.value as unknown as typeof FALLBACK_TREND);
+          const trendData = trendRes.value as any;
+          if (Array.isArray(trendData)) {
+            // API returns [{date, value}] - value in dollars, convert to 亿美元
+            const transformed = trendData.map((t: any) => ({
+              date: t.date || t.month,
+              value: Math.round((t.value || 0) / 1e8), // dollars → 亿美元
+            }));
+            setTrend(transformed);
+          } else {
+            setTrend(trendData);
+          }
         }
       } catch (err) {
         if (!cancelled) {

@@ -9,20 +9,20 @@ import ReactECharts from 'echarts-for-react';
 import { getPrediction, getClustering, getRiskAlerts } from '../../services/api';
 
 const COUNTRY_OPTIONS = [
-  { value: 'vietnam', label: '越南' },
-  { value: 'thailand', label: '泰国' },
-  { value: 'indonesia', label: '印度尼西亚' },
-  { value: 'malaysia', label: '马来西亚' },
-  { value: 'philippines', label: '菲律宾' },
-  { value: 'singapore', label: '新加坡' },
+  { value: 'VNM', label: '越南' },
+  { value: 'THA', label: '泰国' },
+  { value: 'IDN', label: '印度尼西亚' },
+  { value: 'MYS', label: '马来西亚' },
+  { value: 'PHL', label: '菲律宾' },
+  { value: 'SGP', label: '新加坡' },
 ];
 
 const PRODUCT_OPTIONS = [
-  { value: 'electronics', label: '机电产品' },
-  { value: 'minerals', label: '矿产品' },
-  { value: 'agriculture', label: '农产品' },
-  { value: 'chemicals', label: '化工产品' },
-  { value: 'textiles', label: '纺织品' },
+  { value: '机电产品', label: '机电产品' },
+  { value: '矿产品', label: '矿产品' },
+  { value: '农产品', label: '农产品' },
+  { value: '化工产品', label: '化工产品' },
+  { value: '纺织品', label: '纺织品' },
 ];
 
 const CLUSTER_COLORS = ['#1677ff', '#36cfc9', '#ffc53d', '#ff7a45', '#9254de', '#73d13d'];
@@ -31,15 +31,39 @@ const CLUSTER_COLORS = ['#1677ff', '#36cfc9', '#ffc53d', '#ff7a45', '#9254de', '
 const PredictionChart: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [_loading, setLoading] = useState(false);
-  const [country, setCountry] = useState('vietnam');
-  const [_product, setProduct] = useState('electronics');
+  const [country, setCountry] = useState('VNM');
+  const [_product, setProduct] = useState('机电产品');
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getPrediction({ country });
-      setData(res as unknown as Record<string, unknown>);
+      const raw = res as unknown as Record<string, any>;
+
+      if (Array.isArray(raw?.data) && raw.data.length > 0) {
+        // API returns {model_name, mape, data: [{date, actual, predicted, lower, upper}]}
+        // Transform to {months, actual, predicted, lower, upper, mape}
+        const months = raw.data.map((d: any) => d.date);
+        const actual = raw.data.map((d: any) => d.actual != null ? Math.round(d.actual / 1e8) : null); // dollars → 亿美元
+        const predicted = raw.data.map((d: any) => d.predicted != null ? Math.round(d.predicted / 1e8) : null);
+        const lower = raw.data.map((d: any) => d.lower != null ? Math.round(d.lower / 1e8) : null);
+        const upper = raw.data.map((d: any) => d.upper != null ? Math.round(d.upper / 1e8) : null);
+
+        setData({
+          months,
+          actual,
+          predicted,
+          lower,
+          upper,
+          mape: raw.mape || 0,
+        });
+      } else if (raw?.months && raw?.actual && raw?.predicted) {
+        setData(raw);
+      } else {
+        throw new Error('empty data');
+      }
     } catch {
+      // fallback mock - only used if API fails
       const months = Array.from({ length: 24 }, (_, i) => {
         const d = new Date(2024, i);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -58,20 +82,29 @@ const PredictionChart: React.FC = () => {
 
   if (!data) return <Spin style={{ display: 'block', margin: '40px auto' }} />;
 
-  const predLen = data.predicted?.length || 0;
-  const actualPad = Array(data.months.length - predLen).fill(null);
+  // Ensure all required arrays exist (API may return partial data)
+  const months: string[] = data.months || [];
+  const actual: number[] = data.actual || [];
+  const predicted: number[] = data.predicted || [];
+  const lower: number[] = data.lower || predicted.map((v: number) => Math.round(v * 0.88));
+  const upper: number[] = data.upper || predicted.map((v: number) => Math.round(v * 1.12));
+
+  if (!months.length) return <Empty description="暂无预测数据" />;
+
+  const predLen = predicted.length;
+  const actualPad = Array(Math.max(0, months.length - predLen)).fill(null);
 
   const option = {
     tooltip: { trigger: 'axis' },
     legend: { top: 0, data: ['实际值', '预测值', '置信区间'] },
     grid: { left: 60, right: 30, top: 50, bottom: 30 },
-    xAxis: { type: 'category', data: data.months },
+    xAxis: { type: 'category', data: months },
     yAxis: { type: 'value', name: '贸易额 (亿美元)' },
     series: [
       {
         name: '实际值',
         type: 'line',
-        data: [...data.actual, ...Array(predLen).fill(null)],
+        data: [...actual, ...Array(predLen).fill(null)],
         lineStyle: { width: 2.5 },
         itemStyle: { color: '#1677ff' },
         symbol: 'circle',
@@ -80,7 +113,7 @@ const PredictionChart: React.FC = () => {
       {
         name: '预测值',
         type: 'line',
-        data: [...actualPad, ...data.predicted],
+        data: [...actualPad, ...predicted],
         lineStyle: { width: 2.5, type: 'dashed' },
         itemStyle: { color: '#ff7a45' },
         symbol: 'diamond',
@@ -89,7 +122,7 @@ const PredictionChart: React.FC = () => {
       {
         name: '置信上界',
         type: 'line',
-        data: [...actualPad, ...data.upper],
+        data: [...actualPad, ...upper],
         lineStyle: { opacity: 0 },
         symbol: 'none',
         stack: 'confidence',
@@ -98,7 +131,7 @@ const PredictionChart: React.FC = () => {
       {
         name: '置信区间',
         type: 'line',
-        data: [...actualPad, ...data.lower.map((v: number, i: number) => data.upper[i] - v)],
+        data: [...actualPad, ...lower.map((v: number, i: number) => (upper[i] ?? 0) - v)],
         lineStyle: { opacity: 0 },
         symbol: 'none',
         stack: 'confidence',
@@ -134,7 +167,34 @@ const ClusterChart: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     getClustering()
-      .then((res) => setData(res as unknown as Record<string, unknown>))
+      .then((res) => {
+        const raw = res as unknown as any[];
+        if (Array.isArray(raw) && raw.length > 0) {
+          // API returns [{hs_code, name, trade_value, growth_rate, cluster, cluster_label}]
+          // Transform to {clusters, products} format
+          const clusterLabels = new Set<string>();
+          raw.forEach((item: any) => {
+            if (item.cluster_label) clusterLabels.add(item.cluster_label);
+          });
+          const clusters = Array.from(clusterLabels).sort();
+
+          // Create cluster index map
+          const clusterIndex: Record<string, number> = {};
+          clusters.forEach((c, i) => { clusterIndex[c] = i; });
+
+          const products = raw.map((item: any) => ({
+            name: item.name || item.hs_code,
+            growth: item.growth_rate || 0,
+            value: Math.round((item.trade_value || 0) / 1e8), // dollars → 亿美元
+            cluster: clusterIndex[item.cluster_label] ?? item.cluster ?? 0,
+            clusterLabel: item.cluster_label || '',
+          }));
+
+          setData({ clusters, products });
+        } else {
+          setData(raw);
+        }
+      })
       .catch(() => {
         const clusters = ['高增长高价值', '高增长低价值', '低增长高价值', '低增长低价值', '新兴潜力'];
         const products = [

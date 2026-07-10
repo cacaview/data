@@ -34,7 +34,95 @@ const FactorAnalysis: React.FC = () => {
     setLoading(true);
     try {
       const data = await getQuantFactors({ partner: p });
-      setFactorData(data);
+      const raw = data as unknown as Record<string, any>;
+
+      // Transform API response to component format
+      const transformed: any = { ...raw };
+
+      // factors: API returns dict {exchange_rate: {monthly_impact: [...]}, ...}
+      // Component expects array [{name, contribution}, ...]
+      if (raw.factors && typeof raw.factors === 'object' && !Array.isArray(raw.factors)) {
+        const factorNames: Record<string, string> = {
+          exchange_rate: '汇率',
+          seasonal: '季节性',
+          commodity_price: '商品价格',
+          gdp_growth: 'GDP增长',
+          attribution: '归因分析',
+        };
+        transformed.factors = Object.entries(raw.factors)
+          .filter(([key]) => key !== 'attribution') // attribution has different structure
+          .map(([key, val]: [string, any]) => {
+            // Calculate average contribution from monthly_impact
+            const impacts = val?.monthly_impact || [];
+            const avgPct = impacts.length > 0
+              ? impacts.reduce((s: number, i: any) => s + (i.impact_pct || 0), 0) / impacts.length
+              : 0;
+            return {
+              name: factorNames[key] || key,
+              contribution: Math.round(avgPct * 100) / 100,
+              significance: val?.significance || 0.8,
+              description: val?.description || `${factorNames[key] || key}影响因素`,
+            };
+          });
+      }
+
+      // seasonal → seasonality (radar chart expects {dimensions, values})
+      if (raw.seasonal && !raw.seasonality) {
+        const indices = raw.seasonal.seasonal_indices || {};
+        const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+        transformed.seasonality = {
+          dimensions: months,
+          values: months.map((_, i) => Math.round((indices[String(i + 1)] || 1) * 100)),
+        };
+      }
+
+      // Construct trend_data from factors monthly_impact data
+      // The API returns monthly_impact for each factor, we can aggregate to get trend
+      if (raw.factors && typeof raw.factors === 'object') {
+        // Collect all months from all factors
+        const allMonths = new Set<string>();
+        const monthlyTotals: Record<string, number> = {};
+
+        Object.values(raw.factors).forEach((factor: any) => {
+          if (factor?.monthly_impact && Array.isArray(factor.monthly_impact)) {
+            factor.monthly_impact.forEach((item: any) => {
+              if (item.month) {
+                allMonths.add(item.month);
+                monthlyTotals[item.month] = (monthlyTotals[item.month] || 0) + (item.impact_usd || 0);
+              }
+            });
+          }
+        });
+
+        if (allMonths.size > 0) {
+          const sortedMonths = Array.from(allMonths).sort();
+          const actual = sortedMonths.map(m => Math.round((monthlyTotals[m] || 0) / 1e8)); // dollars → 亿美元
+
+          // Calculate trend (moving average)
+          const windowSize = 12;
+          const trend = actual.map((_, i) => {
+            const start = Math.max(0, i - windowSize + 1);
+            const window = actual.slice(start, i + 1);
+            return Math.round(window.reduce((s, v) => s + v, 0) / window.length);
+          });
+
+          // Calculate seasonal component (difference from trend)
+          const seasonal = actual.map((v, i) => v - trend[i]);
+
+          // Calculate residual (difference from trend + seasonal)
+          const residual = actual.map((v, i) => v - trend[i] - seasonal[i]);
+
+          transformed.trend_data = {
+            dates: sortedMonths,
+            actual,
+            trend,
+            seasonal,
+            residual,
+          };
+        }
+      }
+
+      setFactorData(transformed);
     } catch (e) {
       console.error('Factor analysis fetch error:', e);
     } finally {

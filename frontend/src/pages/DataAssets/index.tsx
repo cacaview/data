@@ -19,7 +19,51 @@ const LineageTab: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     getLineage()
-      .then((res) => setData(res))
+      .then((res) => {
+        const raw = res as any;
+        if (raw?.nodes && raw?.edges) {
+          // API returns {nodes: [{id, label, type, x, y}], edges: [{source, target}]}
+          // Transform to {layers: [{name, x, nodes: [label1, label2, ...]}]} format
+          const typeGroups: Record<string, {label: string, x: number, y: number}[]> = {};
+
+          raw.nodes.forEach((node: any) => {
+            const type = node.type || 'unknown';
+            if (!typeGroups[type]) typeGroups[type] = [];
+            typeGroups[type].push({
+              label: node.label || node.id,
+              x: node.x || 0,
+              y: node.y || 0,
+            });
+          });
+
+          // Create layers from type groups
+          const typeOrder = ['source', 'process', 'storage', 'output', 'sink'];
+          const layers = typeOrder
+            .filter(type => typeGroups[type])
+            .map(type => ({
+              name: type === 'source' ? '源数据层' :
+                    type === 'process' ? '处理层' :
+                    type === 'storage' ? '存储层' :
+                    type === 'output' ? '输出层' :
+                    type === 'sink' ? '应用层' : type,
+              x: typeGroups[type][0]?.x || 0,
+              nodes: typeGroups[type].map(n => n.label),
+            }));
+
+          // If no layers created, use all nodes as single layer
+          if (layers.length === 0) {
+            layers.push({
+              name: '数据节点',
+              x: 0,
+              nodes: raw.nodes.map((n: any) => n.label || n.id),
+            });
+          }
+
+          setData({ layers, edges: raw.edges });
+        } else {
+          setData(raw);
+        }
+      })
       .catch(() => {
         const layers = [
           { name: '源数据层', x: 80, nodes: ['海关总署数据', 'UN Comtrade', '东盟秘书处', '企业报关系统'] },
@@ -156,9 +200,35 @@ const QualityTab: React.FC = () => {
     setLoading(true);
     getQuality()
       .then((res) => {
-        const d = res as unknown as { dimensions: QualityDim[]; overall: number };
-        setDims(d.dimensions || []);
-        setOverall(d.overall || 0);
+        const raw = res as unknown as any[];
+        if (Array.isArray(raw) && raw.length > 0) {
+          // API returns [{dimension, score, details}]
+          // Transform to {dimensions, overall} format
+          const dimMap: Record<string, { name: string; icon: React.ReactNode; color: string; desc: string }> = {
+            completeness: { name: '完整性', icon: <CheckCircleOutlined />, color: '#52c41a', desc: '数据字段非空率及记录完整程度' },
+            accuracy: { name: '准确性', icon: <SafetyCertificateOutlined />, color: '#1677ff', desc: '数据值的准确性和合规性' },
+            timeliness: { name: '时效性', icon: <ClockCircleOutlined />, color: '#faad14', desc: '数据更新及时性及延迟情况' },
+            consistency: { name: '一致性', icon: <ApiOutlined />, color: '#722ed1', desc: '跨源数据的一致与规则符合度' },
+            diversity: { name: '多样性', icon: <DatabaseOutlined />, color: '#13c2c2', desc: '数据来源的多样性和覆盖范围' },
+          };
+
+          const dimensions: QualityDim[] = raw
+            .filter((d: any) => dimMap[d.dimension])
+            .map((d: any) => ({
+              key: d.dimension,
+              score: d.score || 0,
+              ...dimMap[d.dimension],
+            }));
+
+          const overall = dimensions.length > 0
+            ? dimensions.reduce((sum: number, d: QualityDim) => sum + d.score, 0) / dimensions.length
+            : 0;
+
+          setDims(dimensions);
+          setOverall(overall);
+        } else {
+          throw new Error('Invalid format');
+        }
       })
       .catch(() => {
         const fallback: QualityDim[] = [
@@ -246,8 +316,33 @@ const CatalogTab: React.FC = () => {
     setLoading(true);
     getCatalog()
       .then((res) => {
-        const d = res as unknown as { sources?: CatalogItem[] };
-        setCatalog(d.sources || (Array.isArray(res) ? res as CatalogItem[] : []));
+        const raw = res as unknown as any[];
+        if (Array.isArray(raw) && raw.length > 0) {
+          // API returns [{id, name, url, description, update_frequency, record_count, last_updated, fields}]
+          // Transform to CatalogItem format
+          const freqMap: Record<string, string> = {
+            daily: '每日',
+            weekly: '每周',
+            monthly: '每月',
+            quarterly: '每季度',
+            yearly: '每年',
+            annual: '每年',
+            real_time: '实时',
+          };
+
+          const transformed: CatalogItem[] = raw.map((item: any) => ({
+            name: item.name || '',
+            url: item.url || '',
+            description: item.description || '',
+            update_freq: freqMap[item.update_frequency] || item.update_frequency || '未知',
+            record_count: item.record_count || 0,
+            quality_score: item.quality_score || 95, // default score
+          }));
+
+          setCatalog(transformed);
+        } else {
+          throw new Error('Invalid format');
+        }
       })
       .catch(() => {
         setCatalog([

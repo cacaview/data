@@ -26,9 +26,128 @@ const Socioeconomic: React.FC = () => {
           getSocioTradeImpact(),
           getSocioSustainability(),
         ]);
-        setMacroData(macro);
-        setTradeImpactData(trade);
-        setSustainabilityData(sustainability);
+
+        // Transform macro data: API returns {countries: [...]} → frontend expects {country_profiles, aggregate}
+        const rawMacro = macro as any;
+        const rawTrade = trade as any;
+
+        // Use trade-impact data for radar chart (has more real fields)
+        if (rawTrade?.countries && Array.isArray(rawTrade.countries)) {
+          const countries = rawTrade.countries;
+
+          // Find max values for normalization
+          const maxTrade = Math.max(...countries.map((c: any) => c.trade_value_usd || 0));
+          const maxGrowth = Math.max(...countries.map((c: any) => Math.abs(c.trade_growth_pct || 0)));
+          const maxShare = Math.max(...countries.map((c: any) => c.market_share_pct || 0));
+          const maxEmployment = Math.max(...countries.map((c: any) => c.employment_proxy || 0));
+          const maxIntensity = Math.max(...countries.map((c: any) => c.trade_intensity_index || 0));
+
+          // Build dimensions list based on available data
+          const dimensions: string[] = ['贸易额', '增长率', '市场份额'];
+          if (maxEmployment > 0) dimensions.push('就业带动');
+          if (maxIntensity > 0) dimensions.push('贸易强度');
+
+          // Normalize function
+          const normalize = (value: number, max: number) => {
+            if (max > 0) return Math.round((value / max) * 100);
+            return 50; // Default to middle if no variation
+          };
+
+          const country_profiles = countries.map((c: any) => {
+            const values: number[] = [
+              normalize(c.trade_value_usd || 0, maxTrade),
+              normalize(Math.abs(c.trade_growth_pct || 0), maxGrowth),
+              normalize(c.market_share_pct || 0, maxShare),
+            ];
+            if (maxEmployment > 0) values.push(normalize(c.employment_proxy || 0, maxEmployment));
+            if (maxIntensity > 0) values.push(normalize(c.trade_intensity_index || 0, maxIntensity));
+
+            return {
+              country: c.country_name || c.country,
+              values,
+            };
+          });
+
+          // Calculate aggregate statistics
+          const totalTrade = countries.reduce((sum: number, c: any) => sum + (c.trade_value_usd || 0), 0);
+          const avgGrowth = countries.reduce((sum: number, c: any) => sum + (c.trade_growth_pct || 0), 0) / countries.length;
+
+          setMacroData({
+            ...rawMacro,
+            country_profiles,
+            aggregate: {
+              'ASEAN贸易总额': Math.round(totalTrade / 1e8), // dollars → 亿美元
+              '平均增长率': Math.round(avgGrowth * 100) / 100,
+              '成员国数量': rawMacro.total_countries || countries.length,
+              '数据年份': rawMacro.year || 2023,
+            },
+            dimensions,
+          });
+        } else if (rawMacro?.countries && Array.isArray(rawMacro.countries)) {
+          // Fallback to macro data if trade-impact not available
+          const countries = rawMacro.countries;
+          const maxTrade = Math.max(...countries.map((c: any) => c.trade_volume_usd || 0));
+          const maxGrowth = Math.max(...countries.map((c: any) => Math.abs(c.trade_growth_pct || 0)));
+
+          const country_profiles = countries.map((c: any) => ({
+            country: c.country_name || c.country,
+            values: [
+              maxTrade > 0 ? Math.round((c.trade_volume_usd || 0) / maxTrade * 100) : 50,
+              maxGrowth > 0 ? Math.round(Math.abs(c.trade_growth_pct || 0) / maxGrowth * 100) : 50,
+            ],
+          }));
+
+          const totalTrade = countries.reduce((sum: number, c: any) => sum + (c.trade_volume_usd || 0), 0);
+          const avgGrowth = countries.reduce((sum: number, c: any) => sum + (c.trade_growth_pct || 0), 0) / countries.length;
+
+          setMacroData({
+            ...rawMacro,
+            country_profiles,
+            aggregate: {
+              'ASEAN贸易总额': Math.round(totalTrade / 1e8),
+              '平均增长率': Math.round(avgGrowth * 100) / 100,
+              '成员国数量': rawMacro.total_countries || countries.length,
+              '数据年份': rawMacro.year || 2023,
+            },
+            dimensions: ['贸易额', '增长率'],
+          });
+        } else {
+          setMacroData(macro);
+        }
+
+        // Transform trade impact data for bar chart
+        if (rawTrade?.countries && Array.isArray(rawTrade.countries)) {
+          const transformedCountries = rawTrade.countries.map((c: any) => ({
+            country: c.country_name || c.country,
+            trade_to_gdp: c.trade_to_gdp_pct || c.trade_to_gdp || 0,
+            ...c,
+          }));
+          setTradeImpactData({ ...rawTrade, countries: transformedCountries });
+        } else {
+          setTradeImpactData(trade);
+        }
+
+        // Transform sustainability: API returns {countries: [...]} → frontend expects {metrics, esg}
+        const rawSustainability = sustainability as any;
+        if (rawSustainability?.countries && Array.isArray(rawSustainability.countries)) {
+          // Extract ESG-like metrics from country data
+          const firstCountry = rawSustainability.countries[0] || {};
+          const metrics = Object.entries(firstCountry)
+            .filter(([key]) => !['country', 'country_name', 'country_name_en'].includes(key))
+            .map(([key, val]) => ({
+              name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              score: typeof val === 'number' ? val : 0,
+              value: typeof val === 'number' ? val : 0,
+            }));
+
+          setSustainabilityData({
+            ...rawSustainability,
+            metrics,
+            esg: metrics.slice(0, 6),
+          });
+        } else {
+          setSustainabilityData(sustainability);
+        }
       } catch (e) {
         console.error('Socioeconomic fetch error:', e);
       } finally {

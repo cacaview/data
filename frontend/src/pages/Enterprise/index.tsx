@@ -66,7 +66,37 @@ const Enterprise: React.FC = () => {
     setLoading(true);
     try {
       const data = await getSupplyChainMap();
-      setSupplyData(data);
+      const raw = data as any;
+
+      // Transform: API returns {nodes, edges} → frontend expects {nodes, links}
+      if (raw?.nodes && raw?.edges) {
+        const transformedNodes = raw.nodes.map((n: any) => ({
+          id: n.id || n.name,
+          name: n.name || n.id,
+          value: n.gdp_billion_usd || n.value || 1,
+          category: n.role === 'hub' ? 0 : n.role === 'partner' ? 1 : 2,
+          is_center: n.role === 'hub',
+        }));
+
+        const transformedLinks = raw.edges.map((e: any) => ({
+          source: e.source,
+          target: e.target,
+          value: e.trade_value_usd ? e.trade_value_usd / 1e8 : e.value || 0, // dollars → 亿美元
+        }));
+
+        setSupplyData({
+          ...raw,
+          nodes: transformedNodes,
+          links: transformedLinks,
+          categories: [
+            { name: '中心国' },
+            { name: '贸易伙伴' },
+            { name: '其他' },
+          ],
+        });
+      } else {
+        setSupplyData(data);
+      }
     } catch (e) {
       console.error('Supply chain fetch error:', e);
     } finally {
@@ -76,7 +106,7 @@ const Enterprise: React.FC = () => {
 
   useEffect(() => {
     fetchRiskData();
-    fetchCompliance();
+    // Don't fetch compliance on initial load - requires entity_name parameter
     fetchCostData();
     fetchSupplyData();
   }, []);

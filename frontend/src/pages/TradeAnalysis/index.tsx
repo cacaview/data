@@ -30,9 +30,36 @@ const TrendTab: React.FC = () => {
     setLoading(true);
     try {
       const res = await getTradeTrend({ start_year: Number(yearRange[0]), end_year: Number(yearRange[1]) });
-      setData(res as unknown as Record<string, unknown>);
+      const raw = res as unknown as any[];
+
+      if (Array.isArray(raw) && raw.length > 0) {
+        // API returns [{date, value, country, product}]
+        // Transform to {years, series} format
+        const yearsSet = new Set<string>();
+        const seriesMap: Record<string, Record<string, number>> = {};
+
+        raw.forEach((item: any) => {
+          const year = item.date?.substring(0, 4) || item.date;
+          const country = item.country || '未知';
+          const value = Math.round((item.value || 0) / 1e8); // dollars → 亿美元
+
+          yearsSet.add(year);
+          if (!seriesMap[country]) seriesMap[country] = {};
+          seriesMap[country][year] = value;
+        });
+
+        const years = Array.from(yearsSet).sort();
+        const series: Record<string, number[]> = {};
+        Object.entries(seriesMap).forEach(([country, yearValues]) => {
+          series[country] = years.map(y => yearValues[y] || 0);
+        });
+
+        setData({ years, series });
+      } else {
+        setData(raw);
+      }
     } catch {
-      // fallback mock
+      // fallback mock - only used if API fails
       const years = Array.from({ length: 7 }, (_, i) => String(2018 + i));
       const mock: Record<string, number[]> = {};
       ASEAN_COUNTRIES.slice(0, 6).forEach((c) => {
@@ -93,7 +120,39 @@ const CompareTab: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     getCountryCompare()
-      .then((res) => setData(res as unknown as Record<string, unknown>))
+      .then((res) => {
+        const raw = res as unknown as any[];
+        if (Array.isArray(raw) && raw.length > 0) {
+          // API returns [{country, trade_volume, growth_rate, interdependence, diversity, rcep_utilization}]
+          // Transform to {indicators, series} format for radar chart
+          const indicators = [
+            { name: '贸易规模', max: 100 },
+            { name: '增长率', max: 100 },
+            { name: '相互依存度', max: 100 },
+            { name: '多元化程度', max: 100 },
+            { name: 'RCEP利用率', max: 100 },
+          ];
+
+          // Find max values for normalization
+          const maxTrade = Math.max(...raw.map((r: any) => r.trade_volume || 0));
+          const maxGrowth = Math.max(...raw.map((r: any) => Math.abs(r.growth_rate || 0)));
+
+          const series = raw.map((r: any) => ({
+            name: r.country,
+            value: [
+              Math.round((r.trade_volume || 0) / maxTrade * 100), // normalize to 0-100
+              Math.round(Math.abs(r.growth_rate || 0) / maxGrowth * 100),
+              Math.round(r.interdependence || 0),
+              Math.round(r.diversity || 0),
+              Math.round(r.rcep_utilization || 0),
+            ],
+          }));
+
+          setData({ indicators, series });
+        } else {
+          setData(raw);
+        }
+      })
       .catch(() => {
         const indicators = [
           { name: '贸易规模', max: 100 },
@@ -155,7 +214,27 @@ const RankingTab: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     getTradeRanking()
-      .then((res) => setData(res as unknown as Record<string, unknown>))
+      .then((res) => {
+        const raw = res as unknown as any[];
+        if (Array.isArray(raw) && raw.length > 0) {
+          // API returns [{name, value, growth, share}]
+          // Transform to {country_ranking, product_ranking} format
+          // Note: API returns countries, we need to split into countries and products
+          // For now, treat all as country ranking since API doesn't distinguish
+          const country_ranking = raw.map((r: any) => ({
+            name: r.name,
+            value: Math.round((r.value || 0) / 1e8), // dollars → 亿美元
+          }));
+
+          // Use top_growth_products from overview API for product ranking
+          // For now, create empty product ranking
+          const product_ranking: { name: string; value: number }[] = [];
+
+          setData({ country_ranking, product_ranking });
+        } else {
+          setData(raw);
+        }
+      })
       .catch(() => {
         setData({
           country_ranking: ASEAN_COUNTRIES.map((c, i) => ({ name: c, value: Math.round(500 - i * 40 + Math.random() * 30) })),
