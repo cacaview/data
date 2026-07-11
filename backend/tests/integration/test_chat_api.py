@@ -65,6 +65,8 @@ def test_chat_empty_message(client, sample_trade_records):
 
 
 def test_chat_top_product(client, sample_trade_records):
-    response = client.post("/api/chat/ask", json={"message": "2024年贸易增长最快的商品类别是什么？"})
+    response = client.post(
+        "/api/chat/ask", json={"message": "2024年贸易增长最快的商品类别是什么？"}
+    )
     assert response.status_code == 200
     assert "reply" in response.json()

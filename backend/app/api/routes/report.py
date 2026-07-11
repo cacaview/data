@@ -19,17 +19,33 @@ def export_pdf(db: Session = Depends(get_db)):
     """Export trade analysis report as PDF."""
     # Get summary data
     latest_year = db.query(func.max(TradeRecord.year)).scalar() or 2025
-    total = db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0)).filter(TradeRecord.year == latest_year).scalar()
-    prev_total = db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0)).filter(TradeRecord.year == latest_year - 1).scalar()
+    total = (
+        db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0))
+        .filter(TradeRecord.year == latest_year)
+        .scalar()
+    )
+    prev_total = (
+        db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0))
+        .filter(TradeRecord.year == latest_year - 1)
+        .scalar()
+    )
     yoy = ((total - prev_total) / prev_total * 100) if prev_total else 0
-    partners = db.query(func.count(func.distinct(TradeRecord.partner))).filter(TradeRecord.year == latest_year).scalar()
-    categories = db.query(func.count(func.distinct(TradeRecord.hs_section))).filter(TradeRecord.year == latest_year).scalar()
+    partners = (
+        db.query(func.count(func.distinct(TradeRecord.partner)))
+        .filter(TradeRecord.year == latest_year)
+        .scalar()
+    )
+    categories = (
+        db.query(func.count(func.distinct(TradeRecord.hs_section)))
+        .filter(TradeRecord.year == latest_year)
+        .scalar()
+    )
 
     summary_data = {
-        'total_trade_value': total,
-        'yoy_growth': yoy,
-        'partner_count': partners,
-        'product_categories': categories,
+        "total_trade_value": total,
+        "yoy_growth": yoy,
+        "partner_count": partners,
+        "product_categories": categories,
     }
 
     # Get trade trend data
@@ -40,11 +56,11 @@ def export_pdf(db: Session = Depends(get_db)):
         .order_by(TradeRecord.year)
         .all()
     )
-    trade_data = [{'date': str(r[0]), 'value': r[1], 'growth': 0} for r in trend_rows[-12:]]
+    trade_data = [{"date": str(r[0]), "value": r[1], "growth": 0} for r in trend_rows[-12:]]
 
     # Get country data
     country_rows = (
-        db.query(TradeRecord.partner, func.sum(TradeRecord.trade_value_usd).label('total'))
+        db.query(TradeRecord.partner, func.sum(TradeRecord.trade_value_usd).label("total"))
         .filter(TradeRecord.year == latest_year, TradeRecord.reporter == "CHN")
         .group_by(TradeRecord.partner)
         .order_by(func.sum(TradeRecord.trade_value_usd).desc())
@@ -53,7 +69,11 @@ def export_pdf(db: Session = Depends(get_db)):
     )
     country_names = {c.code: c.name_cn for c in db.query(Country).all()}
     country_data = [
-        {'name': country_names.get(r[0], r[0]), 'value': r[1], 'share': r[1] / total * 100 if total else 0}
+        {
+            "name": country_names.get(r[0], r[0]),
+            "value": r[1],
+            "share": r[1] / total * 100 if total else 0,
+        }
         for r in country_rows
     ]
 
@@ -77,17 +97,33 @@ def export_docx(db: Session = Depends(get_db)):
     """Export trade analysis report as Word document."""
     # Get summary data
     latest_year = db.query(func.max(TradeRecord.year)).scalar() or 2025
-    total = db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0)).filter(TradeRecord.year == latest_year).scalar()
-    prev_total = db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0)).filter(TradeRecord.year == latest_year - 1).scalar()
+    total = (
+        db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0))
+        .filter(TradeRecord.year == latest_year)
+        .scalar()
+    )
+    prev_total = (
+        db.query(func.coalesce(func.sum(TradeRecord.trade_value_usd), 0.0))
+        .filter(TradeRecord.year == latest_year - 1)
+        .scalar()
+    )
     yoy = ((total - prev_total) / prev_total * 100) if prev_total else 0
-    partners = db.query(func.count(func.distinct(TradeRecord.partner))).filter(TradeRecord.year == latest_year).scalar()
-    categories = db.query(func.count(func.distinct(TradeRecord.hs_section))).filter(TradeRecord.year == latest_year).scalar()
+    partners = (
+        db.query(func.count(func.distinct(TradeRecord.partner)))
+        .filter(TradeRecord.year == latest_year)
+        .scalar()
+    )
+    categories = (
+        db.query(func.count(func.distinct(TradeRecord.hs_section)))
+        .filter(TradeRecord.year == latest_year)
+        .scalar()
+    )
 
     summary_data = {
-        'total_trade_value': total,
-        'yoy_growth': yoy,
-        'partner_count': partners,
-        'product_categories': categories,
+        "total_trade_value": total,
+        "yoy_growth": yoy,
+        "partner_count": partners,
+        "product_categories": categories,
     }
 
     # Get trade trend data
@@ -98,11 +134,11 @@ def export_docx(db: Session = Depends(get_db)):
         .order_by(TradeRecord.year)
         .all()
     )
-    trade_data = [{'date': str(r[0]), 'value': r[1], 'growth': 0} for r in trend_rows[-12:]]
+    trade_data = [{"date": str(r[0]), "value": r[1], "growth": 0} for r in trend_rows[-12:]]
 
     # Get country data
     country_rows = (
-        db.query(TradeRecord.partner, func.sum(TradeRecord.trade_value_usd).label('total'))
+        db.query(TradeRecord.partner, func.sum(TradeRecord.trade_value_usd).label("total"))
         .filter(TradeRecord.year == latest_year, TradeRecord.reporter == "CHN")
         .group_by(TradeRecord.partner)
         .order_by(func.sum(TradeRecord.trade_value_usd).desc())
@@ -111,7 +147,11 @@ def export_docx(db: Session = Depends(get_db)):
     )
     country_names = {c.code: c.name_cn for c in db.query(Country).all()}
     country_data = [
-        {'name': country_names.get(r[0], r[0]), 'value': r[1], 'share': r[1] / total * 100 if total else 0}
+        {
+            "name": country_names.get(r[0], r[0]),
+            "value": r[1],
+            "share": r[1] / total * 100 if total else 0,
+        }
         for r in country_rows
     ]
 

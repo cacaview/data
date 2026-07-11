@@ -21,7 +21,13 @@ class TestCorrelationMatrix:
 
     def test_single_country(self):
         trade_data = [
-            {"year": 2023, "month": i, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + i * 10}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "VNM",
+                "hs_code": "01",
+                "trade_value_usd": 100 + i * 10,
+            }
             for i in range(1, 7)
         ]
         result = compute_correlation_matrix(trade_data, entities="country")
@@ -29,10 +35,22 @@ class TestCorrelationMatrix:
 
     def test_two_countries(self):
         trade_data = [
-            {"year": 2023, "month": i, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + i * 10}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "VNM",
+                "hs_code": "01",
+                "trade_value_usd": 100 + i * 10,
+            }
             for i in range(1, 7)
         ] + [
-            {"year": 2023, "month": i, "partner": "THA", "hs_code": "01", "trade_value_usd": 200 + i * 20}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "THA",
+                "hs_code": "01",
+                "trade_value_usd": 200 + i * 20,
+            }
             for i in range(1, 7)
         ]
         result = compute_correlation_matrix(trade_data, entities="country")
@@ -40,10 +58,22 @@ class TestCorrelationMatrix:
 
     def test_by_product(self):
         trade_data = [
-            {"year": 2023, "month": i, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + i * 10}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "VNM",
+                "hs_code": "01",
+                "trade_value_usd": 100 + i * 10,
+            }
             for i in range(1, 7)
         ] + [
-            {"year": 2023, "month": i, "partner": "VNM", "hs_code": "02", "trade_value_usd": 200 + i * 20}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "VNM",
+                "hs_code": "02",
+                "trade_value_usd": 200 + i * 20,
+            }
             for i in range(1, 7)
         ]
         result = compute_correlation_matrix(trade_data, entities="product")
@@ -51,10 +81,22 @@ class TestCorrelationMatrix:
 
     def test_spearman_method(self):
         trade_data = [
-            {"year": 2023, "month": i, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + i * 10}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "VNM",
+                "hs_code": "01",
+                "trade_value_usd": 100 + i * 10,
+            }
             for i in range(1, 13)
         ] + [
-            {"year": 2023, "month": i, "partner": "THA", "hs_code": "01", "trade_value_usd": 200 + i * 20}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "THA",
+                "hs_code": "01",
+                "trade_value_usd": 200 + i * 20,
+            }
             for i in range(1, 13)
         ]
         result = compute_correlation_matrix(trade_data, entities="country", method="spearman")
@@ -62,10 +104,22 @@ class TestCorrelationMatrix:
 
     def test_invalid_method(self):
         trade_data = [
-            {"year": 2023, "month": i, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + i * 10}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "VNM",
+                "hs_code": "01",
+                "trade_value_usd": 100 + i * 10,
+            }
             for i in range(1, 13)
         ] + [
-            {"year": 2023, "month": i, "partner": "THA", "hs_code": "01", "trade_value_usd": 200 + i * 20}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "THA",
+                "hs_code": "01",
+                "trade_value_usd": 200 + i * 20,
+            }
             for i in range(1, 13)
         ]
         result = compute_correlation_matrix(trade_data, entities="country", method="invalid")
@@ -82,7 +136,9 @@ class TestLeadLagDetection:
         assert result["optimal_lag"] == 0
 
     def test_valid_data(self):
-        trade_data = [{"year": 2023, "month": i, "trade_value_usd": 100 + i * 10} for i in range(1, 13)]
+        trade_data = [
+            {"year": 2023, "month": i, "trade_value_usd": 100 + i * 10} for i in range(1, 13)
+        ]
         macro_data = [{"year": 2023, "month": i, "value": 50 + i * 5} for i in range(1, 13)]
         result = detect_lead_lag(trade_data, macro_data, max_lag=3)
         assert "cross_correlation" in result
@@ -139,7 +195,13 @@ class TestClusterEntities:
 
     def test_insufficient_entities(self):
         trade_data = [
-            {"year": 2023, "month": i, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + i * 10}
+            {
+                "year": 2023,
+                "month": i,
+                "partner": "VNM",
+                "hs_code": "01",
+                "trade_value_usd": 100 + i * 10,
+            }
             for i in range(1, 13)
         ]
         result = cluster_entities(trade_data, n_clusters=2)
@@ -148,8 +210,24 @@ class TestClusterEntities:
     def test_two_entities(self):
         trade_data = []
         for month in range(1, 13):
-            trade_data.append({"year": 2023, "month": month, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + month * 10})
-            trade_data.append({"year": 2023, "month": month, "partner": "THA", "hs_code": "01", "trade_value_usd": 200 + month * 20})
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "VNM",
+                    "hs_code": "01",
+                    "trade_value_usd": 100 + month * 10,
+                }
+            )
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "THA",
+                    "hs_code": "01",
+                    "trade_value_usd": 200 + month * 20,
+                }
+            )
         result = cluster_entities(trade_data, n_clusters=2, entities="country")
         assert "clusters" in result
         assert "method" in result
@@ -157,18 +235,66 @@ class TestClusterEntities:
     def test_three_entities(self):
         trade_data = []
         for month in range(1, 13):
-            trade_data.append({"year": 2023, "month": month, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + month * 10})
-            trade_data.append({"year": 2023, "month": month, "partner": "THA", "hs_code": "01", "trade_value_usd": 200 + month * 20})
-            trade_data.append({"year": 2023, "month": month, "partner": "MYS", "hs_code": "01", "trade_value_usd": 150 + month * 15})
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "VNM",
+                    "hs_code": "01",
+                    "trade_value_usd": 100 + month * 10,
+                }
+            )
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "THA",
+                    "hs_code": "01",
+                    "trade_value_usd": 200 + month * 20,
+                }
+            )
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "MYS",
+                    "hs_code": "01",
+                    "trade_value_usd": 150 + month * 15,
+                }
+            )
         result = cluster_entities(trade_data, n_clusters=2, entities="country")
         assert len(result["clusters"]) > 0
 
     def test_by_product(self):
         trade_data = []
         for month in range(1, 13):
-            trade_data.append({"year": 2023, "month": month, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + month * 10})
-            trade_data.append({"year": 2023, "month": month, "partner": "VNM", "hs_code": "02", "trade_value_usd": 200 + month * 20})
-            trade_data.append({"year": 2023, "month": month, "partner": "VNM", "hs_code": "03", "trade_value_usd": 150 + month * 15})
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "VNM",
+                    "hs_code": "01",
+                    "trade_value_usd": 100 + month * 10,
+                }
+            )
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "VNM",
+                    "hs_code": "02",
+                    "trade_value_usd": 200 + month * 20,
+                }
+            )
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "VNM",
+                    "hs_code": "03",
+                    "trade_value_usd": 150 + month * 15,
+                }
+            )
         result = cluster_entities(trade_data, n_clusters=2, entities="product")
         assert "clusters" in result
 
@@ -182,8 +308,24 @@ class TestFullAnalysis:
     def test_with_trade_data(self):
         trade_data = []
         for month in range(1, 13):
-            trade_data.append({"year": 2023, "month": month, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + month * 10})
-            trade_data.append({"year": 2023, "month": month, "partner": "THA", "hs_code": "01", "trade_value_usd": 200 + month * 20})
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "VNM",
+                    "hs_code": "01",
+                    "trade_value_usd": 100 + month * 10,
+                }
+            )
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "THA",
+                    "hs_code": "01",
+                    "trade_value_usd": 200 + month * 20,
+                }
+            )
         result = full_analysis(trade_data)
         assert "analyses" in result
         assert "correlation_country" in result["analyses"]
@@ -193,7 +335,15 @@ class TestFullAnalysis:
         trade_data = []
         macro_data = []
         for month in range(1, 13):
-            trade_data.append({"year": 2023, "month": month, "partner": "VNM", "hs_code": "01", "trade_value_usd": 100 + month * 10})
+            trade_data.append(
+                {
+                    "year": 2023,
+                    "month": month,
+                    "partner": "VNM",
+                    "hs_code": "01",
+                    "trade_value_usd": 100 + month * 10,
+                }
+            )
             macro_data.append({"year": 2023, "month": month, "value": 50 + month * 5})
         result = full_analysis(trade_data, macro_data=macro_data)
         assert "lead_lag" in result["analyses"]

@@ -136,7 +136,9 @@ class TestEnterpriseComprehensive:
         data = response.json()
         assert data["status"] == "clear"
 
-    def test_cost_optimizer_with_data(self, client: TestClient, sample_trade_records, sample_tariff_rules):
+    def test_cost_optimizer_with_data(
+        self, client: TestClient, sample_trade_records, sample_tariff_rules
+    ):
         """Test cost optimizer with sample data including tariff rules."""
         response = client.get("/api/enterprise/cost-optimizer?year=2023")
         assert response.status_code == 200
@@ -150,14 +152,18 @@ class TestEnterpriseComprehensive:
             assert "best_scheme" in comp
             assert "savings_vs_mfn_usd" in comp
 
-    def test_cost_optimizer_with_hs_code_filter(self, client: TestClient, sample_trade_records, sample_tariff_rules):
+    def test_cost_optimizer_with_hs_code_filter(
+        self, client: TestClient, sample_trade_records, sample_tariff_rules
+    ):
         """Test cost optimizer with HS code filter."""
         response = client.get("/api/enterprise/cost-optimizer?hs_code=854232&year=2023")
         assert response.status_code == 200
         data = response.json()
         assert "comparisons" in data
 
-    def test_cost_optimizer_with_partners(self, client: TestClient, sample_trade_records, sample_tariff_rules):
+    def test_cost_optimizer_with_partners(
+        self, client: TestClient, sample_trade_records, sample_tariff_rules
+    ):
         """Test cost optimizer with specific partners."""
         response = client.get("/api/enterprise/cost-optimizer?partners=VNM,THA&year=2023")
         assert response.status_code == 200

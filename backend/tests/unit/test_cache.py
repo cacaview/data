@@ -10,6 +10,7 @@ class TestCache:
         monkeypatch.setenv("DATA_DIR", str(tmp_path))
         # Reload to pick up new DATA_DIR
         import app.data.cache as cache_mod
+
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
         set_cached("test_key", "test_source", {"data": 123}, ttl_hours=1)
@@ -18,6 +19,7 @@ class TestCache:
 
     def test_get_missing_key(self, tmp_path, monkeypatch):
         import app.data.cache as cache_mod
+
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
         result = get_cached("nonexistent_key_xyz")
@@ -25,6 +27,7 @@ class TestCache:
 
     def test_clear_all(self, tmp_path, monkeypatch):
         import app.data.cache as cache_mod
+
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
         set_cached("key1", "src", "value1", ttl_hours=1)
@@ -35,6 +38,7 @@ class TestCache:
 
     def test_set_with_short_ttl(self, tmp_path, monkeypatch):
         import app.data.cache as cache_mod
+
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
         set_cached("short_ttl", "src", "data", ttl_hours=0.0001)  # very short TTL
@@ -43,6 +47,7 @@ class TestCache:
 
     def test_invalidate_source(self, tmp_path, monkeypatch):
         import app.data.cache as cache_mod
+
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
         set_cached("k1", "source_a", "v1", ttl_hours=1)
@@ -53,6 +58,7 @@ class TestCache:
 
     def test_get_cache_stats(self, tmp_path, monkeypatch):
         import app.data.cache as cache_mod
+
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
         set_cached("k1", "src1", "v1", ttl_hours=1)

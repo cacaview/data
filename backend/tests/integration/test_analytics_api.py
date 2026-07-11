@@ -56,7 +56,9 @@ def test_upstreamness_returns_indices(client, sample_trade_records, sample_count
     assert "upstreamness" in data
 
 
-def test_tariff_savings_returns_result(client, sample_trade_records, sample_countries, sample_tariff_rules):
+def test_tariff_savings_returns_result(
+    client, sample_trade_records, sample_countries, sample_tariff_rules
+):
     r = client.get("/api/analytics/tariff-savings?partner=VNM")
     assert r.status_code == 200
     data = r.json()

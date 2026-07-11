@@ -85,7 +85,9 @@ class TestQuantFactors:
         assert response.status_code == 200
 
     def test_attribute_change(self, client: TestClient, sample_trade_records):
-        response = client.get("/api/quant/factors/attribute?partner=VNM&start_year=2023&start_month=1&end_year=2024&end_month=12")
+        response = client.get(
+            "/api/quant/factors/attribute?partner=VNM&start_year=2023&start_month=1&end_year=2024&end_month=12"
+        )
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, dict)

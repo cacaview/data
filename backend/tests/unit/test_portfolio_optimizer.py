@@ -16,10 +16,10 @@ class TestSafeFloat:
         assert _safe_float(None) == 0.0
 
     def test_nan_returns_zero(self):
-        assert _safe_float(float('nan')) == 0.0
+        assert _safe_float(float("nan")) == 0.0
 
     def test_inf_returns_zero(self):
-        assert _safe_float(float('inf')) == 0.0
+        assert _safe_float(float("inf")) == 0.0
 
     def test_invalid_string(self):
         assert _safe_float("abc") == 0.0
@@ -64,9 +64,30 @@ class TestOptimizePortfolio:
     def test_multiple_partners(self):
         data = []
         for m in range(1, 13):
-            data.append({"year": 2023, "month": m, "partner": "VNM", "trade_value_usd": 1000000 * (1 + m * 0.1)})
-            data.append({"year": 2023, "month": m, "partner": "THA", "trade_value_usd": 800000 * (1 + m * 0.05)})
-            data.append({"year": 2023, "month": m, "partner": "IDN", "trade_value_usd": 600000 * (1 + m * 0.08)})
+            data.append(
+                {
+                    "year": 2023,
+                    "month": m,
+                    "partner": "VNM",
+                    "trade_value_usd": 1000000 * (1 + m * 0.1),
+                }
+            )
+            data.append(
+                {
+                    "year": 2023,
+                    "month": m,
+                    "partner": "THA",
+                    "trade_value_usd": 800000 * (1 + m * 0.05),
+                }
+            )
+            data.append(
+                {
+                    "year": 2023,
+                    "month": m,
+                    "partner": "IDN",
+                    "trade_value_usd": 600000 * (1 + m * 0.08),
+                }
+            )
         result = optimize_portfolio(data)
         assert "hhi_current" in result
         assert "hhi_optimal" in result
