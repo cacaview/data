@@ -7,8 +7,6 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.ai.auth_service import (
-    ALGORITHM,
-    SECRET_KEY,
     _truncate_password,
     create_access_token,
     decode_token,
@@ -107,12 +105,12 @@ class TestTokenDecoding:
         assert payload["role"] == "admin"
 
     def test_decode_token_invalid(self):
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, Exception)):
             decode_token("invalid.token.here")
 
     def test_decode_token_expired(self):
         # Create a token that expired 1 hour ago
         expired_delta = timedelta(hours=-1)
         token = create_access_token({"sub": "testuser"}, expires_delta=expired_delta)
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, Exception)):
             decode_token(token)

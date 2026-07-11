@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from app.data.correlation_engine import (
-    cointegration_test,
     cluster_entities,
+    cointegration_test,
     compute_correlation_matrix,
     detect_lead_lag,
     detect_regime_changes,

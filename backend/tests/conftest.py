@@ -16,11 +16,11 @@ from collections.abc import Iterator
 # Suppress multipart PendingDeprecationWarning before FastAPI import
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning, module="multipart")
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy.orm import sessionmaker  # noqa: E402
+from sqlalchemy.pool import StaticPool  # noqa: E402
 
 # Force test DB before any app imports
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
@@ -32,7 +32,7 @@ os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("RATE_LIMIT_PER_MINUTE", "10000")
 os.environ.setdefault("RATE_LIMIT_STRICT_PER_MINUTE", "10000")
 
-import contextlib
+import contextlib  # noqa: E402
 
 from app.models import database as _database  # noqa: E402
 from app.models.schemas_db import (  # noqa: E402

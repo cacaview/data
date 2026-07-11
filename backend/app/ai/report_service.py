@@ -4,7 +4,6 @@ import io
 from datetime import datetime
 
 from docx import Document
-from docx.shared import Inches, Pt
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet

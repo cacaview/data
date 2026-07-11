@@ -15,7 +15,7 @@ orjson==3.10.7
 # Authentication
 PyJWT>=2.8.0
 passlib>=1.7.4
-bcrypt>=4.0.0
+bcrypt>=4.0.0,<5.0.0
 python-multipart>=0.0.6
 # Report generation
 reportlab>=4.0

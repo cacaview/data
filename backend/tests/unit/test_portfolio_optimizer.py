@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-from app.data.portfolio_optimizer import optimize_portfolio, _partner_monthly_matrix, _safe_float
+from app.data.portfolio_optimizer import _partner_monthly_matrix, _safe_float, optimize_portfolio
 
 
 class TestSafeFloat:
@@ -17,7 +16,6 @@ class TestSafeFloat:
         assert _safe_float(None) == 0.0
 
     def test_nan_returns_zero(self):
-        import math
         assert _safe_float(float('nan')) == 0.0
 
     def test_inf_returns_zero(self):

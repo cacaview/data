@@ -2,19 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
-from unittest.mock import patch
-import os
-import tempfile
-
-from app.data.cache import get_cached, set_cached, clear_all, invalidate_source, get_cache_stats
+from app.data.cache import clear_all, get_cache_stats, get_cached, invalidate_source, set_cached
 
 
 class TestCache:
     def test_set_and_get(self, tmp_path, monkeypatch):
         monkeypatch.setenv("DATA_DIR", str(tmp_path))
         # Reload to pick up new DATA_DIR
-        import importlib
         import app.data.cache as cache_mod
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
@@ -23,7 +17,6 @@ class TestCache:
         assert result == {"data": 123}
 
     def test_get_missing_key(self, tmp_path, monkeypatch):
-        import importlib
         import app.data.cache as cache_mod
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
@@ -41,12 +34,11 @@ class TestCache:
         assert get_cached("key2") is None
 
     def test_set_with_short_ttl(self, tmp_path, monkeypatch):
-        import time
         import app.data.cache as cache_mod
         monkeypatch.setattr(cache_mod, "CACHE_DB_PATH", str(tmp_path / "api_cache.db"))
 
         set_cached("short_ttl", "src", "data", ttl_hours=0.0001)  # very short TTL
-        result = get_cached("short_ttl")
+        get_cached("short_ttl")
         # might or might not be expired depending on timing
 
     def test_invalidate_source(self, tmp_path, monkeypatch):

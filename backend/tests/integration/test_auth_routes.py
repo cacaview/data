@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
 from fastapi.testclient import TestClient
-
-from app.models.schemas_db import User
 
 
 class TestAuthRegister:

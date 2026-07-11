@@ -1,5 +1,7 @@
 """Report generation routes -- PDF and Word export."""
 
+import io
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
@@ -126,6 +128,3 @@ def export_docx(db: Session = Depends(get_db)):
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f"attachment; filename=trade_report_{latest_year}.docx"},
     )
-
-
-import io

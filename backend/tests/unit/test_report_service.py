@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.ai.report_service import generate_trade_report_docx, generate_trade_report_pdf
 
 
