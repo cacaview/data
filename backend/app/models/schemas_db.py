@@ -11,6 +11,22 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class User(Base):
+    """User model for authentication."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    email = Column(String(100), unique=True, nullable=False)
+    hashed_password = Column(String(200), nullable=False)
+    full_name = Column(String(100))
+    role = Column(String(20), default="user")  # user, analyst, admin
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime, default=_utcnow)
+    last_login = Column(DateTime)
+
+
 class TradeRecord(Base):
     __tablename__ = "trade_records"
 

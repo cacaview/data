@@ -95,18 +95,22 @@ from app.api.routes import (  # noqa: E402
     ai_predict,
     analytics,
     assets,
+    auth,
     chat,
     datasources,
     enterprise,
     health,
     overview,
     quant,
+    report,
     socioeconomic,
     tariff,
     trade,
 )
 
 app.include_router(health.router)
+app.include_router(auth.router, prefix="/api/auth", tags=["认证"])
+app.include_router(report.router, prefix="/api/report", tags=["报告生成"])
 app.include_router(overview.router, prefix="/api/overview", tags=["总览"])
 app.include_router(trade.router, prefix="/api/trade", tags=["贸易分析"])
 app.include_router(ai_predict.router, prefix="/api/ai", tags=["AI预测"])
