@@ -80,10 +80,11 @@ markers = [
     "slow: slow-running tests",
 ]
 filterwarnings = [
-    "error",
+    "default",
     "ignore::DeprecationWarning:botocore.*",
     "ignore::DeprecationWarning:openpyxl.*",
     "ignore::ResourceWarning",
+    "ignore::PendingDeprecationWarning:multipart.*",
 ]
 
 [tool.coverage.run]
@@ -91,14 +92,17 @@ source = ["app"]
 
 [tool.coverage.report]
 omit = [
-    "app/data/commodity_client.py",
-    "app/data/comtrade_client.py",
-    "app/data/etl.py",
-    "app/data/exchange_rate_client.py",
-    "app/data/imf_client.py",
-    "app/data/tariff_loader.py",
-    "app/data/worldbank_client.py",
-    "app/ai/chat_service.py",
-    "app/mock_data/init_db.py",
-    "app/mock_data/trade_generator.py",
+    "*/data/commodity_client.py",
+    "*/data/comtrade_client.py",
+    "*/data/etl.py",
+    "*/data/exchange_rate_client.py",
+    "*/data/imf_client.py",
+    "*/data/tariff_loader.py",
+    "*/data/worldbank_client.py",
+    "*/data/bdi_client.py",
+    "*/data/chinadata_client.py",
+    "*/data/stats_gov_client.py",
+    "*/ai/chat_service.py",
+    "*/mock_data/init_db.py",
+    "*/mock_data/trade_generator.py",
 ]

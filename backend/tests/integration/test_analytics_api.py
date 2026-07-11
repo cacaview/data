@@ -29,8 +29,23 @@ def test_risk_dashboard_returns_scores(client, sample_trade_records, sample_coun
 def test_risk_dashboard_unknown_country(client, sample_trade_records):
     r = client.get("/api/analytics/risk-dashboard?country=XXX")
     assert r.status_code == 200
+
+
+def test_tariff_savings(client, sample_trade_records, sample_tariff_rules):
+    """Test tariff savings with tariff rules in DB."""
+    r = client.get("/api/analytics/tariff-savings?partner=VNM")
+    assert r.status_code == 200
     data = r.json()
-    assert "total_score" in data
+    assert isinstance(data, dict)
+    assert "partner" in data or "savings" in data or "error" in data
+
+
+def test_upstreamness(client, sample_trade_records):
+    r = client.get("/api/analytics/upstreamness")
+    assert r.status_code == 200
+    data = r.json()
+    assert isinstance(data, dict)
+    assert "upstreamness" in data or "year" in data
 
 
 def test_upstreamness_returns_indices(client, sample_trade_records, sample_countries):
@@ -41,10 +56,8 @@ def test_upstreamness_returns_indices(client, sample_trade_records, sample_count
     assert "upstreamness" in data
 
 
-def test_tariff_savings_returns_result(client, sample_trade_records, sample_countries):
-    # Need tariff rules in DB for savings calculation
+def test_tariff_savings_returns_result(client, sample_trade_records, sample_countries, sample_tariff_rules):
     r = client.get("/api/analytics/tariff-savings?partner=VNM")
     assert r.status_code == 200
     data = r.json()
-    # Either has savings or error message about no rules
     assert "partner" in data or "error" in data

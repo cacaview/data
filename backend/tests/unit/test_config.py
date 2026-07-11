@@ -17,6 +17,8 @@ def test_settings_load_defaults(monkeypatch):
 
     from app.core.config import Settings
 
+    # Patch the model_config to not load .env file
+    monkeypatch.setattr("app.core.config.Settings.model_config", {"env_file": None})
     s = Settings()
     assert s.APP_NAME == "ACTAP"
     assert s.ENVIRONMENT.value == "development"

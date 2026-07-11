@@ -10,7 +10,11 @@ Provides:
 from __future__ import annotations
 
 import os
+import warnings
 from collections.abc import Iterator
+
+# Suppress multipart PendingDeprecationWarning before FastAPI import
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning, module="multipart")
 
 import pytest
 from fastapi.testclient import TestClient
@@ -158,6 +162,29 @@ def sample_trade_records(session, sample_countries) -> list[TradeRecord]:
         session.add(r)
     session.commit()
     return records
+
+
+@pytest.fixture(scope="function")
+def sample_tariff_rules(session, sample_countries) -> list:
+    """Insert sample tariff rules for testing cost optimizer."""
+    from app.models.schemas_db import TariffRule
+
+    rules = []
+    for c in sample_countries:
+        rules.append(
+            TariffRule(
+                hs_code="854232",
+                partner_country=c.code,
+                mfn_rate=10.0,
+                rcep_rate=5.0,
+                fta_rate=3.0,
+                rule_of_origin="WO",
+            )
+        )
+    for r in rules:
+        session.add(r)
+    session.commit()
+    return rules
 
 
 @pytest.fixture(scope="function")
